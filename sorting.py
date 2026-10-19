@@ -1,7 +1,7 @@
 class RadixSortEngine:
     @staticmethod
     def sort(prof_objects, desc=False):
-        """Stable LSD radix sort on lowercased Unicode names."""
+
         if not prof_objects:
             return []
         max_len = max(len(p["name"]) for p in prof_objects)
@@ -19,7 +19,7 @@ class RadixSortEngine:
 class BinarySearchEngine:
     @staticmethod
     def search(sorted_list, target_name):
-        """Find a professor by exact name (case-insensitive)."""
+        #Cautarea este casesensitive.
         low, high = 0, len(sorted_list) - 1
         target = target_name.strip().casefold()
         while low <= high:

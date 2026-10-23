@@ -16,7 +16,7 @@ class DatabaseManager:
     @classmethod
     def init_database(cls, populate_demo=True):
         tables = [
-            "CREATE TABLE IF NOT EXISTS professors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, department TEXT NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS professors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, department TEXT NOT NULL, day TEXT NOT NULL)",
             "CREATE TABLE IF NOT EXISTS rooms (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, capacity INTEGER NOT NULL, room_type TEXT NOT NULL)",
             "CREATE TABLE IF NOT EXISTS student_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, student_count INTEGER NOT NULL)",
             "CREATE TABLE IF NOT EXISTS courses (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, professor TEXT NOT NULL, activity_type TEXT NOT NULL, academic_hours INTEGER NOT NULL, target_groups TEXT NOT NULL, priority INTEGER NOT NULL)",
@@ -35,28 +35,28 @@ class DatabaseManager:
     def seed_demo_data_if_empty(cls):
         if all(cls.query(f"SELECT COUNT(*) FROM {table}", fetch=True)[0][0] == 0
                for table in ("professors", "rooms", "student_groups", "courses")):
-            cls.query("INSERT INTO professors (name, department) VALUES (?, ?)", [
-                ("Antonescu Dan", "Calculatoare"), ("Georgescu Ana", "Matematică"),
-                ("Ionescu Maria", "Matematică Aplicată"), ("Ioana Vasile", "Cibernetică"), ("Popescu Ion", "Informatică")
+            cls.query("INSERT INTO professors (name, department, day) VALUES (?, ?, ?)", [
+                ("Antonescu Dan", "Inginerie","ALL"), ("Georgescu Ana", "Matematică","LUNI,MARTI"),
+                ("Ionescu Maria", "Matematică","ALL"), ("Ioana Vasile", "Cibernetică","ALL"), ("Popescu Ion", "Informatică","ALL")
             ], many=True)
             cls.query("INSERT INTO rooms (name, capacity, room_type) VALUES (?, ?, ?)", [
-                ("Aula 1 (Magna)", 100, "Aulă"), ("Aula 2", 70, "Aulă"), ("Sala Seminar S1", 35, "Seminar"),
+                ("Aula 1", 100, "Aulă"), ("Aula 2", 70, "Aulă"), ("Sala Seminar S1", 35, "Seminar"),("Sala Seminar S2", 40, "Seminar"),
                 ("Laborator L1", 30, "Laborator"), ("Laborator L2", 35, "Laborator")
             ], many=True)
             cls.query("INSERT INTO student_groups (name, student_count) VALUES (?, ?)", [
-                ("TI-211", 28), ("TI-212", 26), ("SI-211", 30), ("SI-212", 25)
+                ("TI-261", 28), ("TI-262", 26), ("SI-261", 30), ("SI-262", 25),("CR-261", 28), ("TI-251", 26), ("TI-241", 30), ("TI-231", 25)
             ], many=True)
             cls.query("INSERT INTO courses (name, professor, activity_type, academic_hours, target_groups, priority) VALUES (?, ?, ?, ?, ?, ?)", [
-                ("Matematică Superioară (TI)", "Georgescu Ana", "Curs", 3, "TI-211,TI-212", 30),
-                ("Matematică Superioară (TI)", "Georgescu Ana", "Seminar", 1, "TI-211,TI-212", 20),
-                ("Matematică Discretă (SI)", "Ionescu Maria", "Curs", 2, "SI-211,SI-212", 30),
-                ("Matematică Discretă (SI)", "Ionescu Maria", "Seminar", 2, "SI-211,SI-212", 20),
-                ("Programare OOP", "Popescu Ion", "Curs", 2, "TI-211,TI-212", 28),
-                ("Programare OOP", "Popescu Ion", "Laborator", 3, "TI-211,TI-212", 25),
-                ("Sisteme Informaționale", "Ioana Vasile", "Curs", 3, "SI-211,SI-212", 28),
-                ("Sisteme Informaționale", "Ioana Vasile", "Laborator", 1, "SI-211,SI-212", 22),
-                ("Rețele de Calculatoare", "Antonescu Dan", "Curs", 2, "TI-211,TI-212,SI-211", 28),
-                ("Rețele de Calculatoare", "Antonescu Dan", "Laborator", 2, "TI-211,SI-211", 22),
+                ("Analiza Matematică", "Georgescu Ana", "Curs", 3, "TI-261,TI-262,SI-261,SI-262,CR-261", 40),
+                ("Rețele de caculatoare", "Ioana Vasile", "Curs",2,"TI-261,TI-262,SI-261,SI-262,CR-261",30),
+                ("Analiza Matematică","Ionescu Maria","Curs",2,"TI-261,TI-262,SI-261,CR-261",30),
+                ("Rețele de caculatoare","Ioana Vasile","Laborator",3,"CR-261",30),
+                ("POO","Popescu Ion","Curs",4,"TI-261,TI-262,SI-261,SI-262,CR-261",30),
+                ("POO","Popescu Ion","Laborator",4,"TI-251,TI-231",30),
+                ("POO","Popescu Ion","Laborator",4,"TI-241",30),
+                ("POO","Popescu Ion","Laborator",4,"TI-261",30),
+                ("Etica umană","Ioana Vasile","Seminar",2,"TI-231",30),
+                ("Proceduri de calcul","Ioana Vasile","Seminar",2,"TI-231",30),
             ], many=True)
 
     @classmethod

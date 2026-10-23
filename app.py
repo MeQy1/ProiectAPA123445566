@@ -7,11 +7,12 @@ from generator import GeneratorMixin
 from preview import PreviewMixin
 from excel import ExcelExportMixin
 
+FONT = "Segoe UI"
 
 class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExportMixin):
     def __init__(self, root):
         self.root = root
-        self.root.title("Orar universitar • Generator inteligent")
+        self.root.title("Generator de orar")
         self.root.geometry("1360x860")
         self.root.minsize(1120, 720)
 
@@ -26,17 +27,19 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s = ttk.Style(self.root)
         s.theme_use("clam")
 
+
+# Design-ul programului
         self.bg_color = "#F5F7FB"
         self.card_bg = "#FFFFFF"
-        self.primary_color = "#2563EB"
-        self.primary_dark = "#1D4ED8"
+        self.primary_color = "#FF2A00"
+        self.primary_dark = "#CF2400"
         self.text_color = "#1F2A44"
-        self.border_color = "#D9E2F0"
+        self.border_color = "#FF8066"
         self.muted_text = "#64748B"
 
         self.root.configure(bg=self.bg_color)
 
-        s.configure(".", background=self.bg_color, foreground=self.text_color, font=("Segoe UI", 10))
+        s.configure(".", background=self.bg_color, foreground=self.text_color, font=(FONT, 10))
         s.configure("Page.TFrame", background=self.bg_color)
         s.configure("Card.TFrame", background=self.card_bg)
         s.configure("Toolbar.TFrame", background=self.bg_color)
@@ -45,7 +48,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.configure("TNotebook", background=self.bg_color, borderwidth=0, tabmargins=(0, 0, 0, 0))
         s.configure(
             "TNotebook.Tab",
-            font=("Segoe UI", 12, "bold"),
+            font=(FONT, 12, "bold"),
             padding=(18, 14),
             background="#E9EEF7",
             foreground="#51627C",
@@ -60,14 +63,14 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
             foreground=[("selected", self.primary_dark), ("active", self.text_color)],
         )
 
-        s.configure("TLabel", background=self.card_bg, foreground=self.text_color, font=("Segoe UI", 10))
-        s.configure("Title.TLabel", background=self.bg_color, foreground=self.text_color, font=("Segoe UI", 24, "bold"))
-        s.configure("Muted.TLabel", background=self.bg_color, foreground=self.muted_text, font=("Segoe UI", 10))
-        s.configure("Hint.TLabel", background=self.card_bg, foreground=self.muted_text, font=("Segoe UI", 9))
-        s.configure("Field.TLabel", background=self.card_bg, foreground="#334155", font=("Segoe UI", 10, "bold"))
-        s.configure("Status.TLabel", background="#EAF2FF", foreground="#1E40AF", font=("Segoe UI", 10))
-        s.configure("PreviewTitle.TLabel", background=self.bg_color, foreground=self.text_color, font=("Segoe UI", 16, "bold"))
-        s.configure("SubHeader.TLabel", background=self.card_bg, foreground=self.text_color, font=("Segoe UI", 13, "bold"))
+        s.configure("TLabel", background=self.card_bg, foreground=self.text_color, font=(FONT, 10))
+        s.configure("Title.TLabel", background=self.bg_color, foreground=self.text_color, font=(FONT, 24, "bold"))
+        s.configure("Muted.TLabel", background=self.bg_color, foreground=self.muted_text, font=(FONT, 10))
+        s.configure("Hint.TLabel", background=self.card_bg, foreground=self.muted_text, font=(FONT, 9))
+        s.configure("Field.TLabel", background=self.card_bg, foreground="#334155", font=(FONT, 10, "bold"))
+        s.configure("Status.TLabel", background="#EAF2FF", foreground="#1E40AF", font=(FONT, 10))
+        s.configure("PreviewTitle.TLabel", background=self.bg_color, foreground=self.text_color, font=(FONT, 16, "bold"))
+        s.configure("SubHeader.TLabel", background=self.card_bg, foreground=self.text_color, font=(FONT, 13, "bold"))
 
         s.configure(
             "Card.TLabelframe",
@@ -80,7 +83,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
             "Card.TLabelframe.Label",
             background=self.card_bg,
             foreground="#1E3A5F",
-            font=("Segoe UI", 12, "bold"),
+            font=(FONT, 12, "bold"),
         )
 
         s.configure(
@@ -121,7 +124,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
 
         s.configure(
             "Primary.TButton",
-            font=("Segoe UI", 10, "bold"),
+            font=(FONT, 10, "bold"),
             padding=(16, 10),
             background=self.primary_color,
             foreground="white",
@@ -131,7 +134,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.map("Primary.TButton", background=[("active", self.primary_dark)])
         s.configure(
             "Secondary.TButton",
-            font=("Segoe UI", 10),
+            font=(FONT, 10),
             padding=(14, 10),
             background="#EDF2F8",
             foreground="#334155",
@@ -141,7 +144,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.map("Secondary.TButton", background=[("active", "#E2E8F0")])
         s.configure(
             "Quiet.TButton",
-            font=("Segoe UI", 9),
+            font=(FONT, 9),
             padding=(12, 8),
             background="#F8FAFC",
             foreground="#33537A",
@@ -151,7 +154,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.map("Quiet.TButton", background=[("active", "#EEF2F7")])
         s.configure(
             "Danger.TButton",
-            font=("Segoe UI", 10),
+            font=(FONT, 10),
             padding=(12, 9),
             background="#FDECEC",
             foreground="#B42332",
@@ -162,7 +165,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
 
         s.configure(
             "Treeview",
-            font=("Segoe UI", 9),
+            font=(FONT, 9),
             rowheight=30,
             background="#FFFFFF",
             fieldbackground="#FFFFFF",
@@ -173,7 +176,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.map("Treeview", background=[("selected", "#DBEAFE")], foreground=[("selected", "#1E3A8A")])
         s.configure(
             "Treeview.Heading",
-            font=("Segoe UI", 9, "bold"),
+            font=(FONT, 9, "bold"),
             background="#EFF4FA",
             foreground="#334155",
             padding=(8, 8),

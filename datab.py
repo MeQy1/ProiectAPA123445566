@@ -16,7 +16,7 @@ class DatabaseManager:
     @classmethod
     def init_database(cls, populate_demo=True):
         tables = [
-            "CREATE TABLE IF NOT EXISTS professors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, department TEXT NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS professors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, department TEXT NOT NULL, day TEXT NOT NULL)",
             "CREATE TABLE IF NOT EXISTS rooms (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, capacity INTEGER NOT NULL, room_type TEXT NOT NULL)",
             "CREATE TABLE IF NOT EXISTS student_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, student_count INTEGER NOT NULL)",
             "CREATE TABLE IF NOT EXISTS courses (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, professor TEXT NOT NULL, activity_type TEXT NOT NULL, academic_hours INTEGER NOT NULL, target_groups TEXT NOT NULL, priority INTEGER NOT NULL)",
@@ -35,9 +35,9 @@ class DatabaseManager:
     def seed_demo_data_if_empty(cls):
         if all(cls.query(f"SELECT COUNT(*) FROM {table}", fetch=True)[0][0] == 0
                for table in ("professors", "rooms", "student_groups", "courses")):
-            cls.query("INSERT INTO professors (name, department) VALUES (?, ?)", [
-                ("Antonescu Dan", "Inginerie"), ("Georgescu Ana", "Matematică"),
-                ("Ionescu Maria", "Matematică"), ("Ioana Vasile", "Cibernetică"), ("Popescu Ion", "Informatică")
+            cls.query("INSERT INTO professors (name, department, day) VALUES (?, ?, ?)", [
+                ("Antonescu Dan", "Inginerie","ALL"), ("Georgescu Ana", "Matematică","LUNI,MARTI"),
+                ("Ionescu Maria", "Matematică","ALL"), ("Ioana Vasile", "Cibernetică","ALL"), ("Popescu Ion", "Informatică","ALL")
             ], many=True)
             cls.query("INSERT INTO rooms (name, capacity, room_type) VALUES (?, ?, ?)", [
                 ("Aula 1", 100, "Aulă"), ("Aula 2", 70, "Aulă"), ("Sala Seminar S1", 35, "Seminar"),("Sala Seminar S2", 40, "Seminar"),

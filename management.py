@@ -35,6 +35,7 @@ class ManagementMixin:
 
         actions = ttk.Frame(header, style="Toolbar.TFrame")
         actions.pack(side="right")
+        ttk.Button(actions, text="Import Excel", style="Secondary.TButton", command=self.import_excel).pack(side="left", padx=(0, 8))
         ttk.Button(actions, text="Date demonstrative", style="Secondary.TButton", command=self.restore_demo_data_action).pack(side="left", padx=(0, 8))
         ttk.Button(actions, text="Generează orarul", style="Primary.TButton", command=self.run_generation).pack(side="left")
 

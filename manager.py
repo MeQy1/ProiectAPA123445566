@@ -20,7 +20,7 @@ class ScheduleEngine:
         return ["FULL"] * (h // 2) + (["SPLIT"] if h % 2 else [])
 
     @classmethod
-    def build_variables_and_domains(cls, groups, courses, rooms, timeslots):
+    def build_variables_and_domains(cls, groups, courses, rooms, timeslots, allow_overcapacity=False):
         variables, var_meta, domains, capacity_errors = [], {}, {}, []
         group_map = {g["name"]: g["student_count"] for g in groups}
         max_aula_cap = max((r["capacity"] for r in rooms if r["room_type"] == "Aulă"), default=0)
@@ -57,6 +57,12 @@ class ScheduleEngine:
 
             for b_idx, (b_groups, total_stud) in enumerate(batches):
                 valid_rooms = [r["name"] for r in rooms if r["room_type"] == t_room and r["capacity"] >= total_stud]
+                if not valid_rooms and allow_overcapacity:
+                    # Alege numai sala cea mai incapatoare de tipul solicitat.
+                    candidates = [r for r in rooms if r["room_type"] == t_room]
+                    if candidates:
+                        largest = max(candidates, key=lambda r: r["capacity"])
+                        valid_rooms = [largest["name"]]
                 if not valid_rooms:
                     capacity_errors.append(
                         f"• Obiectul '{c['name']}' ({c['activity_type']}) pentru [{', '.join(b_groups)}] "

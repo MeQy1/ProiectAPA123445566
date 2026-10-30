@@ -6,10 +6,11 @@ from management import ManagementMixin
 from generator import GeneratorMixin
 from preview import PreviewMixin
 from excel import ExcelExportMixin
+from import_excel import ExcelImportMixin
 
 FONT = "Segoe UI"
 
-class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExportMixin):
+class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExportMixin, ExcelImportMixin):
     def __init__(self, root):
         self.root = root
         self.root.title("Generator de orar")

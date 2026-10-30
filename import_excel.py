@@ -96,9 +96,12 @@ def import_file(path, parent=None, resolver=None):
             while True:
                 try:
                     conn.execute('SAVEPOINT import_row')
+                    row_counts = {key: 0 for key in summary}
                     try:
-                        _import_row(conn, cells, summary)
+                        _import_row(conn, cells, row_counts)
                         conn.execute('RELEASE SAVEPOINT import_row')
+                        for key, count in row_counts.items():
+                            summary[key] += count
                     except Exception:
                         conn.execute('ROLLBACK TO SAVEPOINT import_row')
                         conn.execute('RELEASE SAVEPOINT import_row')

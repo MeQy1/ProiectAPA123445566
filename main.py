@@ -1,12 +1,17 @@
+import sys
 import tkinter as tk
-from app import UniversityOrarApp
 
 
 def main():
     root = tk.Tk()
+    from app import UniversityOrarApp
     UniversityOrarApp(root)
     root.mainloop()
-#hello
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ModuleNotFoundError as exc:
+        print(f"Lipseste biblioteca: {exc.name}", file=sys.stderr)
+        print("Ruleaza: python -m pip install -r requirements.txt", file=sys.stderr)
+        raise SystemExit(1)

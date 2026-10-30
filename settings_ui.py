@@ -93,8 +93,6 @@ def apply_palette(app, theme):
     style.map('Treeview', background=[('selected',c['soft'])], foreground=[('selected',c['text'])])
     style.configure('Treeview.Heading', background=c['soft'], foreground=c['text'], bordercolor=c['edge'])
     style.map('Treeview.Heading', background=[('active', c['edge'])], foreground=[('active', c['text'])])
-    style.map('Treeview.Heading', background=[('active', c['edge'])], foreground=[('active', c['text'])])
-    style.map('Treeview.Heading', background=[('active', c['edge'])], foreground=[('active', c['text'])])
     for kind in ('Vertical.TScrollbar','Horizontal.TScrollbar'):
         style.configure(kind, background=c['edge'], troughcolor=c['bg'], arrowcolor=c['text'])
     # Classic tk widgets do not inherit ttk styles.
@@ -103,18 +101,17 @@ def apply_palette(app, theme):
         if getattr(app,'last_timetable',None):
             app.draw_visual_schedule()
     if hasattr(app, 'lst_course_groups'):
-        app.lst_course_groups.configure(bg=c['field'], fg=c['text'], selectbackground=c['soft'], selectforeground=c['text'], highlightbackground=c['edge'])
+        # Listbox nu accepta insertbackground; aceasta optiune este pentru Entry.
+        app.lst_course_groups.configure(
+            selectborderwidth=0,
+            bg=c['field'],
+            fg=c['text'],
+            selectbackground=c['primary'],
+            selectforeground='#FFFFFF',
+            highlightbackground=c['edge'],
+        )
     if hasattr(app, 'management_canvas'):
         app.management_canvas.configure(bg=c['bg'])
-    # Aplicam tema si pentru selectia/cursorul Listbox-ului clasic.
-    if hasattr(app, 'lst_course_groups'):
-        app.lst_course_groups.configure(selectborderwidth=0, insertbackground=c['text'])
-    # Aplicam tema si pentru selectia/cursorul Listbox-ului clasic.
-    if hasattr(app, 'lst_course_groups'):
-        app.lst_course_groups.configure(selectborderwidth=0, insertbackground=c['text'])
-    # Aplicam tema si pentru selectia/cursorul Listbox-ului clasic.
-    if hasattr(app, 'lst_course_groups'):
-        app.lst_course_groups.configure(selectborderwidth=0, insertbackground=c['text'])
 
 
 def export_database(filepath):
@@ -246,3 +243,4 @@ class SettingsMixin:
             messagebox.showinfo('Import reușit',', '.join(f'{k}: {v}' for k,v in summary.items()),parent=self.root)
         except Exception as exc:
             messagebox.showerror('Import Excel',str(exc),parent=self.root)
+

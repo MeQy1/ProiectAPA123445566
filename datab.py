@@ -1,6 +1,7 @@
 import sqlite3
+from pathlib import Path
 
-DB_NAME = 'BazaDeDateProgram.db'
+DB_NAME = str(Path(__file__).resolve().with_name('BazaDeDateProgram.db'))
 
 class DatabaseManager:
     @staticmethod

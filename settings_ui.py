@@ -61,19 +61,40 @@ def apply_palette(app, theme):
     style.configure('Card.TLabelframe', background=c['card'], foreground=c['text'], bordercolor=c['edge'], borderwidth=1)
     style.configure('Card.TLabelframe.Label', background=c['card'], foreground=c['dark'])
     for kind in ('TEntry','TCombobox','TSpinbox'):
-        style.configure(kind, fieldbackground=c['field'], foreground=c['text'], background=c['field'], bordercolor=c['edge'], insertcolor=c['text'])
-        style.map(kind, fieldbackground=[('readonly',c['field'])], foreground=[('readonly',c['text'])])
+        style.configure(kind, fieldbackground=c['field'], foreground=c['text'], background=c['field'],
+                        bordercolor=c['edge'], lightcolor=c['edge'], darkcolor=c['edge'],
+                        insertcolor=c['text'], arrowcolor=c['text'])
+        style.map(kind, fieldbackground=[('readonly',c['field']), ('disabled',c['soft'])],
+                  foreground=[('readonly',c['text']), ('disabled',c['muted'])],
+                  selectbackground=[('readonly',c['soft'])], selectforeground=[('readonly',c['text'])])
+    style.configure('TRadiobutton', background=c['card'], foreground=c['text'],
+                    font=('Segoe UI', 10), indicatorcolor=c['field'])
+    style.map('TRadiobutton', background=[('active',c['card'])],
+              foreground=[('active',c['primary']), ('disabled',c['muted'])],
+              indicatorcolor=[('selected',c['primary']), ('active',c['field'])])
+    style.configure('TCheckbutton', background=c['card'], foreground=c['text'], indicatorcolor=c['field'])
+    style.map('TCheckbutton', background=[('active',c['card'])],
+              foreground=[('active',c['primary'])], indicatorcolor=[('selected',c['primary'])])
+    app.root.option_add('*TCombobox*Listbox.background', c['field'])
+    app.root.option_add('*TCombobox*Listbox.foreground', c['text'])
+    app.root.option_add('*TCombobox*Listbox.selectBackground', c['soft'])
+    app.root.option_add('*TCombobox*Listbox.selectForeground', c['text'])
     for kind, bg, fg, active in (
         ('Primary.TButton',c['primary'],'#FFFFFF',c['dark']),
         ('Secondary.TButton',c['soft'],c['text'],c['edge']),
         ('Quiet.TButton',c['card'],c['text'],c['soft']),
-        ('Danger.TButton','#FCE7E7','#A32636','#F8CCCC'),
+        ('Danger.TButton', '#513139' if theme == 'Dark' else '#FCE7E7',
+         '#FFB4BC' if theme == 'Dark' else '#A32636',
+         '#69404A' if theme == 'Dark' else '#F8CCCC'),
     ):
         style.configure(kind, background=bg, foreground=fg, padding=(14,10), borderwidth=0)
         style.map(kind, background=[('active',active)], foreground=[('active',fg)])
     style.configure('Treeview', background=c['card'], fieldbackground=c['card'], foreground=c['text'], rowheight=34)
     style.map('Treeview', background=[('selected',c['soft'])], foreground=[('selected',c['text'])])
     style.configure('Treeview.Heading', background=c['soft'], foreground=c['text'], bordercolor=c['edge'])
+    style.map('Treeview.Heading', background=[('active', c['edge'])], foreground=[('active', c['text'])])
+    style.map('Treeview.Heading', background=[('active', c['edge'])], foreground=[('active', c['text'])])
+    style.map('Treeview.Heading', background=[('active', c['edge'])], foreground=[('active', c['text'])])
     for kind in ('Vertical.TScrollbar','Horizontal.TScrollbar'):
         style.configure(kind, background=c['edge'], troughcolor=c['bg'], arrowcolor=c['text'])
     # Classic tk widgets do not inherit ttk styles.
@@ -85,6 +106,15 @@ def apply_palette(app, theme):
         app.lst_course_groups.configure(bg=c['field'], fg=c['text'], selectbackground=c['soft'], selectforeground=c['text'], highlightbackground=c['edge'])
     if hasattr(app, 'management_canvas'):
         app.management_canvas.configure(bg=c['bg'])
+    # Aplicam tema si pentru selectia/cursorul Listbox-ului clasic.
+    if hasattr(app, 'lst_course_groups'):
+        app.lst_course_groups.configure(selectborderwidth=0, insertbackground=c['text'])
+    # Aplicam tema si pentru selectia/cursorul Listbox-ului clasic.
+    if hasattr(app, 'lst_course_groups'):
+        app.lst_course_groups.configure(selectborderwidth=0, insertbackground=c['text'])
+    # Aplicam tema si pentru selectia/cursorul Listbox-ului clasic.
+    if hasattr(app, 'lst_course_groups'):
+        app.lst_course_groups.configure(selectborderwidth=0, insertbackground=c['text'])
 
 
 def export_database(filepath):

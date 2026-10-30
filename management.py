@@ -21,6 +21,21 @@ class ManagementMixin:
         window = canvas.create_window((0, 0), window=content, anchor="nw")
         content.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.bind("<Configure>", lambda e: canvas.itemconfigure(window, width=e.width))
+        # Gestionam roata mouse-ului o singura data, la nivelul aplicatiei.
+        # Rutam evenimentul spre pagina de sub cursor, nu exclusiv spre previzualizare.
+        self.root.bind_all("<MouseWheel>", self._scroll_active_page, add="+")
+        self.root.bind_all("<Button-4>", self._scroll_active_page, add="+")
+        self.root.bind_all("<Button-5>", self._scroll_active_page, add="+")
+        # Gestionam roata mouse-ului o singura data, la nivelul aplicatiei.
+        # Rutam evenimentul spre pagina de sub cursor, nu exclusiv spre previzualizare.
+        self.root.bind_all("<MouseWheel>", self._scroll_active_page, add="+")
+        self.root.bind_all("<Button-4>", self._scroll_active_page, add="+")
+        self.root.bind_all("<Button-5>", self._scroll_active_page, add="+")
+        # Gestionam roata mouse-ului o singura data, la nivelul aplicatiei.
+        # Rutam evenimentul spre pagina de sub cursor, nu exclusiv spre previzualizare.
+        self.root.bind_all("<MouseWheel>", self._scroll_active_page, add="+")
+        self.root.bind_all("<Button-4>", self._scroll_active_page, add="+")
+        self.root.bind_all("<Button-5>", self._scroll_active_page, add="+")
 
         header = ttk.Frame(content, style="Toolbar.TFrame")
         header.pack(fill="x", pady=(0, 18))
@@ -61,6 +76,96 @@ class ManagementMixin:
         ttk.Button(footer, text="Șterge toate datele", style="Danger.TButton", command=self.clear_all_database_action).pack(side="right")
 
         self.refresh_all_views()
+
+    def _scroll_active_page(self, event):
+        try:
+            hovered = self.root.winfo_containing(event.x_root, event.y_root)
+            if hovered is None:
+                return
+            selected = self.notebook.select()
+            if selected == str(self.tab_manage):
+                target, tab = self.management_canvas, self.tab_manage
+            elif selected == str(self.tab_view):
+                target, tab = self.canvas, self.tab_view
+            else:
+                return
+            current = hovered
+            while current is not None and current != tab:
+                current = current.master
+            if current != tab:
+                return
+            if event.num == 4:
+                amount = -1
+            elif event.num == 5:
+                amount = 1
+            elif event.delta:
+                amount = -int(event.delta / 120) if abs(event.delta) >= 120 else (-1 if event.delta > 0 else 1)
+            else:
+                return
+            target.yview_scroll(amount, 'units')
+            return 'break'
+        except (tk.TclError, AttributeError):
+            return
+
+    def _scroll_active_page(self, event):
+        try:
+            hovered = self.root.winfo_containing(event.x_root, event.y_root)
+            if hovered is None:
+                return
+            selected = self.notebook.select()
+            if selected == str(self.tab_manage):
+                target, tab = self.management_canvas, self.tab_manage
+            elif selected == str(self.tab_view):
+                target, tab = self.canvas, self.tab_view
+            else:
+                return
+            current = hovered
+            while current is not None and current != tab:
+                current = current.master
+            if current != tab:
+                return
+            if event.num == 4:
+                amount = -1
+            elif event.num == 5:
+                amount = 1
+            elif event.delta:
+                amount = -int(event.delta / 120) if abs(event.delta) >= 120 else (-1 if event.delta > 0 else 1)
+            else:
+                return
+            target.yview_scroll(amount, 'units')
+            return 'break'
+        except (tk.TclError, AttributeError):
+            return
+
+    def _scroll_active_page(self, event):
+        try:
+            hovered = self.root.winfo_containing(event.x_root, event.y_root)
+            if hovered is None:
+                return
+            selected = self.notebook.select()
+            if selected == str(self.tab_manage):
+                target, tab = self.management_canvas, self.tab_manage
+            elif selected == str(self.tab_view):
+                target, tab = self.canvas, self.tab_view
+            else:
+                return
+            current = hovered
+            while current is not None and current != tab:
+                current = current.master
+            if current != tab:
+                return
+            if event.num == 4:
+                amount = -1
+            elif event.num == 5:
+                amount = 1
+            elif event.delta:
+                amount = -int(event.delta / 120) if abs(event.delta) >= 120 else (-1 if event.delta > 0 else 1)
+            else:
+                return
+            target.yview_scroll(amount, 'units')
+            return 'break'
+        except (tk.TclError, AttributeError):
+            return
 
     def create_card(self, parent, title, subtitle):
         card = ttk.LabelFrame(parent, text=f"  {title}  ", style="Card.TLabelframe", padding=20)

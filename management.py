@@ -70,6 +70,15 @@ class ManagementMixin:
         ttk.Button(footer, text="Șterge toate datele", style="Danger.TButton", command=self.clear_all_database_action).pack(side="right")
 
         self.refresh_all_views()
+        # Tkinter poate intercepta scroll-ul pe Listbox/Entry inainte de bind_all.
+        # Conectam separat toate widgeturile din prima pagina.
+        self._bind_management_wheel(self.tab_manage)
+
+    def _bind_management_wheel(self, widget):
+        for child in widget.winfo_children():
+            for event_name in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+                child.bind(event_name, self._scroll_active_page, add="+")
+            self._bind_management_wheel(child)
 
     def _scroll_active_page(self, event):
         try:
@@ -229,7 +238,10 @@ class ManagementMixin:
         self.lst_course_groups.pack(fill="x")
 
         bar = self.create_button_bar(parent)
-        ttk.Button(bar, text="Selectează toate grupele", style="Quiet.TButton", command=lambda: self.lst_course_groups.select_set(0, tk.END)).pack(side="left")
+        ttk.Button(bar, text="Selectează toate", style="Quiet.TButton",
+                   command=lambda: self.lst_course_groups.select_set(0, tk.END)).pack(side="left")
+        ttk.Button(bar, text="Deselectează toate", style="Quiet.TButton",
+                   command=lambda: self.lst_course_groups.selection_clear(0, tk.END)).pack(side="left", padx=(8, 0))
         ttk.Button(bar, text="+ Adaugă disciplina", style="Primary.TButton", command=self.add_course).pack(side="left", padx=8)
         ttk.Button(bar, text="Șterge disciplina selectată", style="Secondary.TButton", command=lambda: self.delete_selected(self.tree_courses, "courses", "id")).pack(side="left")
 
@@ -274,8 +286,7 @@ class ManagementMixin:
         for g in self.groups:
             self.tree_groups.insert("", "end", values=(g["name"], f"{g['student_count']} studenți"))
             self.lst_course_groups.insert(tk.END, g["name"])
-        if self.groups:
-            self.lst_course_groups.select_set(0, tk.END)
+        # Nu selectam automat nici o grupa.
 
         for r in self.rooms:
             self.tree_rooms.insert("", "end", values=(r["name"], f"{r['capacity']} locuri", r["room_type"]))

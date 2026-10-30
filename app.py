@@ -7,22 +7,25 @@ from generator import GeneratorMixin
 from preview import PreviewMixin
 from excel import ExcelExportMixin
 from import_excel import ExcelImportMixin
+from settings_ui import SettingsMixin, read_settings, apply_palette
 
 FONT = "Segoe UI"
 
-class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExportMixin, ExcelImportMixin):
+class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExportMixin, ExcelImportMixin, SettingsMixin):
     def __init__(self, root):
         self.root = root
         self.root.title("Generator de orar")
         self.root.geometry("1360x860")
         self.root.minsize(1120, 720)
 
+        self.preferences = read_settings()
         self.setup_styles()
-        DatabaseManager.init_database(populate_demo=True)
+        DatabaseManager.init_database(populate_demo=False)
         self.timeslots = ScheduleEngine.generate_timeslots()
         self.last_timetable = {}
         self.load_data()
         self.build_ui()
+        apply_palette(self, self.preferences["theme"])
 
     def setup_styles(self):
         s = ttk.Style(self.root)
@@ -30,13 +33,13 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
 
 
 # Design-ul programului
-        self.bg_color = "#F5F7FB"
+        self.bg_color = "#FFF9F5"
         self.card_bg = "#FFFFFF"
-        self.primary_color = "#FF2A00"
-        self.primary_dark = "#CF2400"
-        self.text_color = "#1F2A44"
-        self.border_color = "#FF8066"
-        self.muted_text = "#64748B"
+        self.primary_color = "#F47421"
+        self.primary_dark = "#C95712"
+        self.text_color = "#292524"
+        self.border_color = "#F6C9A7"
+        self.muted_text = "#78716C"
 
         self.root.configure(bg=self.bg_color)
 
@@ -44,15 +47,15 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.configure("Page.TFrame", background=self.bg_color)
         s.configure("Card.TFrame", background=self.card_bg)
         s.configure("Toolbar.TFrame", background=self.bg_color)
-        s.configure("Status.TFrame", background="#EAF2FF")
+        s.configure("Status.TFrame", background="#FFF0E3")
 
         s.configure("TNotebook", background=self.bg_color, borderwidth=0, tabmargins=(0, 0, 0, 0))
         s.configure(
             "TNotebook.Tab",
             font=(FONT, 12, "bold"),
-            padding=(18, 14),
-            background="#E9EEF7",
-            foreground="#51627C",
+            padding=(18, 12),
+            background="#FFF0E5",
+            foreground="#8D6348",
             borderwidth=0,
             focuscolor="none",
             width=52,
@@ -60,7 +63,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         )
         s.map(
             "TNotebook.Tab",
-            background=[("selected", "#FFFFFF"), ("active", "#F4F7FC")],
+            background=[("selected", "#FFFFFF"), ("active", "#FFF6EE")],
             foreground=[("selected", self.primary_dark), ("active", self.text_color)],
         )
 
@@ -68,8 +71,8 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.configure("Title.TLabel", background=self.bg_color, foreground=self.text_color, font=(FONT, 24, "bold"))
         s.configure("Muted.TLabel", background=self.bg_color, foreground=self.muted_text, font=(FONT, 10))
         s.configure("Hint.TLabel", background=self.card_bg, foreground=self.muted_text, font=(FONT, 9))
-        s.configure("Field.TLabel", background=self.card_bg, foreground="#334155", font=(FONT, 10, "bold"))
-        s.configure("Status.TLabel", background="#EAF2FF", foreground="#1E40AF", font=(FONT, 10))
+        s.configure("Field.TLabel", background=self.card_bg, foreground="#44403C", font=(FONT, 10, "bold"))
+        s.configure("Status.TLabel", background="#FFF0E3", foreground="#9A4111", font=(FONT, 10))
         s.configure("PreviewTitle.TLabel", background=self.bg_color, foreground=self.text_color, font=(FONT, 16, "bold"))
         s.configure("SubHeader.TLabel", background=self.card_bg, foreground=self.text_color, font=(FONT, 13, "bold"))
 
@@ -83,7 +86,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.configure(
             "Card.TLabelframe.Label",
             background=self.card_bg,
-            foreground="#1E3A5F",
+            foreground="#9A4111",
             font=(FONT, 12, "bold"),
         )
 
@@ -91,9 +94,9 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
             "TEntry",
             padding=(10, 8),
             fieldbackground="#FFFFFF",
-            bordercolor="#CBD5E1",
-            lightcolor="#CBD5E1",
-            darkcolor="#CBD5E1",
+            bordercolor="#E8D5C6",
+            lightcolor="#E8D5C6",
+            darkcolor="#E8D5C6",
             relief="solid",
             insertcolor=self.text_color,
         )
@@ -103,10 +106,10 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
             fieldbackground="#FFFFFF",
             background="#FFFFFF",
             foreground=self.text_color,
-            bordercolor="#CBD5E1",
+            bordercolor="#E8D5C6",
             arrowcolor=self.text_color,
-            lightcolor="#CBD5E1",
-            darkcolor="#CBD5E1",
+            lightcolor="#E8D5C6",
+            darkcolor="#E8D5C6",
             relief="solid",
         )
         s.map("TCombobox", fieldbackground=[("readonly", "#FFFFFF")], background=[("readonly", "#FFFFFF")])
@@ -116,17 +119,17 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
             fieldbackground="#FFFFFF",
             background="#FFFFFF",
             foreground=self.text_color,
-            bordercolor="#CBD5E1",
+            bordercolor="#E8D5C6",
             arrowcolor=self.text_color,
-            lightcolor="#CBD5E1",
-            darkcolor="#CBD5E1",
+            lightcolor="#E8D5C6",
+            darkcolor="#E8D5C6",
             relief="solid",
         )
 
         s.configure(
             "Primary.TButton",
             font=(FONT, 10, "bold"),
-            padding=(16, 10),
+            padding=(18, 11),
             background=self.primary_color,
             foreground="white",
             borderwidth=0,
@@ -137,22 +140,22 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
             "Secondary.TButton",
             font=(FONT, 10),
             padding=(14, 10),
-            background="#EDF2F8",
-            foreground="#334155",
+            background="#FBE9DA",
+            foreground="#44403C",
             borderwidth=0,
             focusthickness=0,
         )
-        s.map("Secondary.TButton", background=[("active", "#E2E8F0")])
+        s.map("Secondary.TButton", background=[("active", "#F4DDCB")])
         s.configure(
             "Quiet.TButton",
             font=(FONT, 9),
             padding=(12, 8),
-            background="#F8FAFC",
-            foreground="#33537A",
+            background="#FFFBF8",
+            foreground="#754322",
             borderwidth=0,
             focusthickness=0,
         )
-        s.map("Quiet.TButton", background=[("active", "#EEF2F7")])
+        s.map("Quiet.TButton", background=[("active", "#FFF1E7")])
         s.configure(
             "Danger.TButton",
             font=(FONT, 10),
@@ -167,37 +170,37 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.configure(
             "Treeview",
             font=(FONT, 9),
-            rowheight=30,
+            rowheight=34,
             background="#FFFFFF",
             fieldbackground="#FFFFFF",
-            foreground="#22314A",
+            foreground="#292524",
             borderwidth=0,
             relief="flat",
         )
-        s.map("Treeview", background=[("selected", "#DBEAFE")], foreground=[("selected", "#1E3A8A")])
+        s.map("Treeview", background=[("selected", "#FFE2CC")], foreground=[("selected", "#9A4111")])
         s.configure(
             "Treeview.Heading",
             font=(FONT, 9, "bold"),
-            background="#EFF4FA",
-            foreground="#334155",
+            background="#FCEFE3",
+            foreground="#44403C",
             padding=(8, 8),
             relief="flat",
         )
 
         s.configure(
             "Vertical.TScrollbar",
-            background="#E2E8F0",
-            troughcolor="#F8FAFC",
-            bordercolor="#E2E8F0",
-            arrowcolor="#334155",
+            background="#F4DDCB",
+            troughcolor="#FFFBF8",
+            bordercolor="#F4DDCB",
+            arrowcolor="#44403C",
             relief="flat",
         )
         s.configure(
             "Horizontal.TScrollbar",
-            background="#E2E8F0",
-            troughcolor="#F8FAFC",
-            bordercolor="#E2E8F0",
-            arrowcolor="#334155",
+            background="#F4DDCB",
+            troughcolor="#FFFBF8",
+            bordercolor="#F4DDCB",
+            arrowcolor="#44403C",
             relief="flat",
         )
 
@@ -218,10 +221,13 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         self.notebook.pack(fill="both", expand=True)
         self.tab_manage = ttk.Frame(self.notebook, style="Page.TFrame")
         self.tab_view = ttk.Frame(self.notebook, style="Page.TFrame")
+        self.tab_settings = ttk.Frame(self.notebook, style="Page.TFrame")
         self.notebook.add(self.tab_manage, text="1. Gestionare și generare")
         self.notebook.add(self.tab_view, text="2. Orar și export Excel")
+        self.notebook.add(self.tab_settings, text="3. Setări")
         self.build_management_tab()
         self.build_preview_export_tab()
+        self.build_settings_tab()
 
     @staticmethod
     def make_tree(parent, cols, headings=None, widths=None, height=5):

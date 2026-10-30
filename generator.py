@@ -92,7 +92,7 @@ class GeneratorMixin:
             return
         self.status_var.set('Construiesc orarul cu Beam Search...')
         self.root.update_idletasks()
-        timetable = ScheduleEngine.beam_search(variables, meta, domains, self.timeslots, beam_width=12)
+        timetable = ScheduleEngine.beam_search(variables, meta, domains, self.timeslots, beam_width=self.preferences["beam_width"])
         if len(timetable) != len(variables):
             self.status_var.set('Nu s-a găsit un orar complet. Verificați sălile și încărcarea profesorilor.')
             messagebox.showwarning('Fără soluție', 'Încercați mai multe săli sau reduceți restricțiile.')

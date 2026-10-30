@@ -11,18 +11,19 @@ class ManagementMixin:
         page.pack(fill="both", expand=True)
 
         canvas = tk.Canvas(page, bg=self.bg_color, highlightthickness=0)
+        self.management_canvas = canvas
         scroll = ttk.Scrollbar(page, orient="vertical", command=canvas.yview)
         canvas.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
         canvas.pack(side="left", fill="both", expand=True)
 
-        content = ttk.Frame(canvas, style="Page.TFrame", padding=(22, 18, 22, 26))
+        content = ttk.Frame(canvas, style="Page.TFrame", padding=(26, 22, 26, 30))
         window = canvas.create_window((0, 0), window=content, anchor="nw")
         content.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.bind("<Configure>", lambda e: canvas.itemconfigure(window, width=e.width))
 
         header = ttk.Frame(content, style="Toolbar.TFrame")
-        header.pack(fill="x", pady=(0, 14))
+        header.pack(fill="x", pady=(0, 18))
 
         title_box = ttk.Frame(header, style="Toolbar.TFrame")
         title_box.pack(side="left", fill="x", expand=True)
@@ -35,12 +36,11 @@ class ManagementMixin:
 
         actions = ttk.Frame(header, style="Toolbar.TFrame")
         actions.pack(side="right")
-        ttk.Button(actions, text="Import Excel", style="Secondary.TButton", command=self.import_excel).pack(side="left", padx=(0, 8))
         ttk.Button(actions, text="Date demonstrative", style="Secondary.TButton", command=self.restore_demo_data_action).pack(side="left", padx=(0, 8))
         ttk.Button(actions, text="Generează orarul", style="Primary.TButton", command=self.run_generation).pack(side="left")
 
-        status = ttk.Frame(content, style="Status.TFrame", padding=(14, 10))
-        status.pack(fill="x", pady=(0, 14))
+        status = ttk.Frame(content, style="Status.TFrame", padding=(16, 12))
+        status.pack(fill="x", pady=(0, 18))
         self.status_var = tk.StringVar(value="Date încărcate. Completează sau modifică informațiile de mai jos.")
         ttk.Label(status, textvariable=self.status_var, style="Status.TLabel").pack(anchor="w")
 
@@ -63,8 +63,8 @@ class ManagementMixin:
         self.refresh_all_views()
 
     def create_card(self, parent, title, subtitle):
-        card = ttk.LabelFrame(parent, text=f"  {title}  ", style="Card.TLabelframe", padding=16)
-        card.pack(fill="x", expand=True, pady=8)
+        card = ttk.LabelFrame(parent, text=f"  {title}  ", style="Card.TLabelframe", padding=20)
+        card.pack(fill="x", expand=True, pady=10)
         ttk.Label(card, text=subtitle, style="Hint.TLabel").pack(anchor="w", pady=(0, 12))
         return card
 
@@ -177,14 +177,14 @@ class ManagementMixin:
             exportselection=False,
             height=5,
             bg="white",
-            fg="#17253D",
+            fg="#292524",
             relief="solid",
             borderwidth=1,
-            selectbackground="#DBEAFE",
-            selectforeground="#1E40AF",
+            selectbackground="#FFE2CC",
+            selectforeground="#9A4111",
             highlightthickness=1,
-            highlightbackground="#CBD5E1",
-            highlightcolor="#93C5FD",
+            highlightbackground="#E8D5C6",
+            highlightcolor="#F47421",
             font=("Segoe UI", 10),
         )
         self.lst_course_groups.pack(fill="x")

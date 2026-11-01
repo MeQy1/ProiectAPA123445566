@@ -6,7 +6,7 @@ from management import ManagementMixin
 from generator import GeneratorMixin
 from preview import PreviewMixin
 from excel import ExcelExportMixin
-from import_excel import ExcelImportMixin
+from excel import ExcelImportMixin
 from settings_ui import SettingsMixin, read_settings, apply_palette
 
 FONT = "Segoe UI"

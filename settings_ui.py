@@ -233,7 +233,7 @@ class SettingsMixin:
             finally:
                 wb.close()
             if not is_backup:
-                from import_excel import import_file
+                from excel import import_file
                 summary = import_file(path,parent=self.root)
             else:
                 if not messagebox.askyesno('Restaurare backup','Acest Excel este un backup complet. Importul va ÎNLOCUI toate datele curente. Continui?',parent=self.root):

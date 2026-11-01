@@ -23,9 +23,6 @@ class ManagementMixin:
         canvas.bind("<Configure>", lambda e: canvas.itemconfigure(window, width=e.width))
         # Gestionam roata mouse-ului o singura data, la nivelul aplicatiei.
         # Rutam evenimentul spre pagina de sub cursor, nu exclusiv spre previzualizare.
-        self.root.bind_all("<MouseWheel>", self._scroll_active_page, add="+")
-        self.root.bind_all("<Button-4>", self._scroll_active_page, add="+")
-        self.root.bind_all("<Button-5>", self._scroll_active_page, add="+")
         # Gestionam roata mouse-ului o singura data, la nivelul aplicatiei.
         # Rutam evenimentul spre pagina de sub cursor, nu exclusiv spre previzualizare.
         # Gestionam roata mouse-ului o singura data, la nivelul aplicatiei.
@@ -69,46 +66,57 @@ class ManagementMixin:
         footer.pack(fill="x", pady=(12, 0))
         ttk.Button(footer, text="Șterge toate datele", style="Danger.TButton", command=self.clear_all_database_action).pack(side="right")
 
+        self._instaleaza_scroll_gestionare()
         self.refresh_all_views()
         # Tkinter poate intercepta scroll-ul pe Listbox/Entry inainte de bind_all.
         # Conectam separat toate widgeturile din prima pagina.
-        self._bind_management_wheel(self.tab_manage)
 
-    def _bind_management_wheel(self, widget):
+    def _instaleaza_scroll_gestionare(self):
+        """Trateaza rotita/trackpad-ul inaintea controalelor Tkinter."""
+        tag = "APA_GestionareScroll"
+        self._apa_scroll_acc = 0.0
+        # bind_class pe un tag propriu evita apelurile duplicate bind_all.
+        self.root.bind_class(tag, "<MouseWheel>", self._scroll_active_page)
+        self.root.bind_class(tag, "<Button-4>", self._scroll_active_page)
+        self.root.bind_class(tag, "<Button-5>", self._scroll_active_page)
+        self._adauga_tag_scroll(self.tab_manage, tag)
+
+    def _adauga_tag_scroll(self, widget, tag):
+        # Pozitionam tag-ul inainte de clasa widgetului: Listbox/Spinbox
+        # nu mai consuma scroll-ul inainte de handler-ul nostru.
+        tags = widget.bindtags()
+        if tag not in tags:
+            widget.bindtags((tag,) + tags)
         for child in widget.winfo_children():
-            for event_name in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
-                child.bind(event_name, self._scroll_active_page, add="+")
-            self._bind_management_wheel(child)
+            self._adauga_tag_scroll(child, tag)
 
     def _scroll_active_page(self, event):
+        """Scroll pe canvasul primei pagini, inclusiv cu trackpad macOS."""
         try:
-            hovered = self.root.winfo_containing(event.x_root, event.y_root)
-            if hovered is None:
-                return
-            selected = self.notebook.select()
-            if selected == str(self.tab_manage):
-                target, tab = self.management_canvas, self.tab_manage
-            elif selected == str(self.tab_view):
-                target, tab = self.canvas, self.tab_view
-            else:
-                return
-            current = hovered
-            while current is not None and current != tab:
-                current = current.master
-            if current != tab:
-                return
+            if self.notebook.select() != str(self.tab_manage):
+                return None
+            canvas = self.management_canvas
             if event.num == 4:
-                amount = -1
+                steps = -1
             elif event.num == 5:
-                amount = 1
-            elif event.delta:
-                amount = -int(event.delta / 120) if abs(event.delta) >= 120 else (-1 if event.delta > 0 else 1)
+                steps = 1
             else:
-                return
-            target.yview_scroll(amount, 'units')
-            return 'break'
+                delta = getattr(event, "delta", 0)
+                if not delta:
+                    return None
+                # Tk pe macOS livreaza delta mici (de regula +/-1),
+                # iar pe Windows +/-120; normalizam ambele variante.
+                if abs(delta) >= 120:
+                    steps = -round(delta / 120)
+                else:
+                    steps = -round(delta)
+                    if steps == 0:
+                        steps = -1 if delta > 0 else 1
+                steps = max(-5, min(5, steps))
+            canvas.yview_scroll(steps, "units")
+            return "break"  # nu lasa Listbox sa scrolleze separat
         except (tk.TclError, AttributeError):
-            return
+            return None
 
     def create_card(self, parent, title, subtitle):
         card = ttk.LabelFrame(parent, text=f"  {title}  ", style="Card.TLabelframe", padding=20)

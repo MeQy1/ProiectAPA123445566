@@ -42,8 +42,7 @@ class ManagementMixin:
 
         actions = ttk.Frame(header, style="Toolbar.TFrame")
         actions.pack(side="right")
-        ttk.Button(actions, text="Date demonstrative", style="Secondary.TButton", command=self.restore_demo_data_action).pack(side="left", padx=(0, 8))
-        ttk.Button(actions, text="Generează orarul", style="Primary.TButton", command=self.run_generation).pack(side="left")
+        ttk.Button(actions, text="Generează orarul", style="Primary.TButton", width=28, command=self.run_generation).pack(side="left")
 
         status = ttk.Frame(content, style="Status.TFrame", padding=(16, 12))
         status.pack(fill="x", pady=(0, 18))
@@ -62,9 +61,6 @@ class ManagementMixin:
         self.course_card = self.create_card(content, "Discipline", "Configurați disciplina, profesorul, tipul activității și grupele participante.")
         self.build_courses_section(self.course_card)
 
-        footer = ttk.Frame(content, style="Page.TFrame")
-        footer.pack(fill="x", pady=(12, 0))
-        ttk.Button(footer, text="Șterge toate datele", style="Danger.TButton", command=self.clear_all_database_action).pack(side="right")
 
         self._instaleaza_scroll_gestionare()
         self.refresh_all_views()
@@ -119,8 +115,12 @@ class ManagementMixin:
             return None
 
     def create_card(self, parent, title, subtitle):
-        card = ttk.LabelFrame(parent, text=f"  {title}  ", style="Card.TLabelframe", padding=20)
-        card.pack(fill="x", expand=True, pady=10)
+        # Frame simplu, fara spatiul rezervat legendei unui LabelFrame.
+        card = ttk.Frame(parent, style="SectionCard.TFrame", padding=(20, 14, 20, 20))
+        card.pack(fill="x", expand=True, pady=(0, 12))
+        ttk.Label(
+            card, text=title, style="SectionTitle.TLabel", anchor="w",
+        ).pack(fill="x", anchor="w", pady=(0, 10))
         ttk.Label(card, text=subtitle, style="Hint.TLabel").pack(anchor="w", pady=(0, 12))
         return card
 

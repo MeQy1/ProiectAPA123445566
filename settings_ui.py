@@ -12,7 +12,6 @@ CONFIG = Path(__file__).with_name('orar_settings.json')
 PALETTES = {
     'Simplist': dict(bg='#FFF9F5', card='#FFFFFF', primary='#F47421', dark='#C95712', text='#292524', muted='#78716C', soft='#FFF0E5', edge='#F6C9A7', field='#FFFFFF'),
     'Profesional': dict(bg='#F7F8FA', card='#FFFFFF', primary='#E97724', dark='#BD5615', text='#20252B', muted='#667085', soft='#FFF5EE', edge='#E5E7EB', field='#FFFFFF'),
-    'Dark': dict(bg='#17191E', card='#242831', primary='#FF9243', dark='#DD6E26', text='#F3F4F6', muted='#ABB4C0', soft='#34313A', edge='#4A4F58', field='#303641'),
 }
 TABLES = {
     'Profesori': ('professors', ('name', 'department')),
@@ -37,7 +36,7 @@ def save_settings(settings):
 
 
 def apply_palette(app, theme):
-    c = PALETTES[theme]
+    c = PALETTES.get(theme, PALETTES['Simplist'])
     app.bg_color, app.card_bg, app.primary_color = c['bg'], c['card'], c['primary']
     app.primary_dark, app.text_color, app.border_color, app.muted_text = c['dark'], c['text'], c['edge'], c['muted']
     app.root.configure(bg=c['bg'])
@@ -48,6 +47,10 @@ def apply_palette(app, theme):
     for kind in ('Card.TFrame', 'TFrame'):
         style.configure(kind, background=c['card'])
     style.configure('Status.TFrame', background=c['soft'])
+    style.configure('SectionCard.TFrame', background=c['card'],
+                    borderwidth=1, relief='solid', bordercolor=c['edge'])
+    style.configure('SectionTitle.TLabel', background=c['card'],
+                    foreground='#000000', font=('Segoe UI', 12, 'bold'))
     style.configure('TNotebook', background=c['bg'], borderwidth=0)
     style.configure('TNotebook.Tab', background=c['soft'], foreground=c['text'], padding=(18, 12))
     style.map('TNotebook.Tab', background=[('selected',c['card']),('active',c['soft'])], foreground=[('selected',c['dark'])])
@@ -59,7 +62,7 @@ def apply_palette(app, theme):
     ):
         style.configure(kind, background=bg, foreground=fg)
     style.configure('Card.TLabelframe', background=c['card'], foreground=c['text'], bordercolor=c['edge'], borderwidth=1)
-    style.configure('Card.TLabelframe.Label', background=c['card'], foreground=c['dark'])
+    style.configure('Card.TLabelframe.Label', background=c['card'], foreground='#000000')
     for kind in ('TEntry','TCombobox','TSpinbox'):
         style.configure(kind, fieldbackground=c['field'], foreground=c['text'], background=c['field'],
                         bordercolor=c['edge'], lightcolor=c['edge'], darkcolor=c['edge'],
@@ -79,6 +82,9 @@ def apply_palette(app, theme):
     app.root.option_add('*TCombobox*Listbox.foreground', c['text'])
     app.root.option_add('*TCombobox*Listbox.selectBackground', c['soft'])
     app.root.option_add('*TCombobox*Listbox.selectForeground', c['text'])
+    style.configure('Generate.TButton', font=('Segoe UI', 14, 'bold'),
+                    padding=(32, 18), background=c['primary'], foreground='#FFFFFF', borderwidth=0)
+    style.map('Generate.TButton', background=[('active', c['dark'])])
     for kind, bg, fg, active in (
         ('Primary.TButton',c['primary'],'#FFFFFF',c['dark']),
         ('Secondary.TButton',c['soft'],c['text'],c['edge']),
@@ -110,6 +116,8 @@ def apply_palette(app, theme):
             selectforeground='#FFFFFF',
             highlightbackground=c['edge'],
         )
+    if hasattr(app, 'settings_canvas'):
+        app.settings_canvas.configure(bg=c['bg'])
     if hasattr(app, 'management_canvas'):
         app.management_canvas.configure(bg=c['bg'])
 
@@ -168,8 +176,20 @@ def restore_database(filepath):
 
 class SettingsMixin:
     def build_settings_tab(self):
-        page = ttk.Frame(self.tab_settings, style='Page.TFrame', padding=28)
-        page.pack(fill='both',expand=True)
+        wrapper = ttk.Frame(self.tab_settings, style='Page.TFrame')
+        wrapper.pack(fill='both', expand=True)
+        self.settings_canvas = tk.Canvas(wrapper, bg=self.bg_color, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(wrapper, orient='vertical', command=self.settings_canvas.yview)
+        self.settings_canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side='right', fill='y')
+        self.settings_canvas.pack(side='left', fill='both', expand=True)
+        page = ttk.Frame(self.settings_canvas, style='Page.TFrame', padding=28)
+        window = self.settings_canvas.create_window((0, 0), window=page, anchor='nw')
+        page.bind('<Configure>', lambda e: self.settings_canvas.configure(scrollregion=self.settings_canvas.bbox('all')))
+        self.settings_canvas.bind('<Configure>', lambda e: self.settings_canvas.itemconfigure(window, width=e.width))
+        self.root.bind_all('<MouseWheel>', self._scroll_settings, add='+')
+        self.root.bind_all('<Button-4>', self._scroll_settings, add='+')
+        self.root.bind_all('<Button-5>', self._scroll_settings, add='+')
         ttk.Label(page, text='Setări aplicație', style='Title.TLabel').pack(anchor='w',pady=(0,8))
         ttk.Label(page, text='Personalizează interfața, generarea orarului și datele.',style='Muted.TLabel').pack(anchor='w',pady=(0,24))
         appearance = ttk.LabelFrame(page,text='  Aspect vizual  ',style='Card.TLabelframe',padding=20)
@@ -178,7 +198,7 @@ class SettingsMixin:
         self.theme_var = tk.StringVar(value=self.preferences['theme'])
         themes = ttk.Frame(appearance,style='Card.TFrame')
         themes.pack(anchor='w')
-        for theme,desc in [('Profesional','Alb, accente portocalii'),('Simplist','Aspectul actual, alb-portocaliu'),('Dark','Mod întunecat')]:
+        for theme,desc in [('Profesional','Alb, accente portocalii'),('Simplist','Aspectul actual, alb-portocaliu')]:
             r = ttk.Radiobutton(themes,text=f'{theme} — {desc}',value=theme,variable=self.theme_var,command=self.change_theme)
             r.pack(anchor='w',pady=5)
         generation = ttk.LabelFrame(page,text='  Generare orar  ',style='Card.TLabelframe',padding=20)
@@ -188,6 +208,14 @@ class SettingsMixin:
         self.beam_var = tk.IntVar(value=self.preferences['beam_width'])
         ttk.Spinbox(generation,from_=1,to=100,textvariable=self.beam_var,width=10).pack(anchor='w')
         ttk.Button(generation,text='Salvează beam width',style='Primary.TButton',command=self.save_beam_width).pack(anchor='w',pady=(12,0))
+        # Operatiile asupra intregii baze de date sunt grupate pe pagina Setari.
+        data_admin = ttk.LabelFrame(page, text='  Administrare date  ', style='Card.TLabelframe', padding=20)
+        data_admin.pack(fill='x', pady=(0,16))
+        ttk.Label(data_admin, text='Încarcă datele demonstrative sau șterge toate datele existente.', style='Hint.TLabel').pack(anchor='w', pady=(0,12))
+        admin_buttons = ttk.Frame(data_admin, style='Card.TFrame')
+        admin_buttons.pack(fill='x')
+        ttk.Button(admin_buttons, text='Date demonstrative', style='Secondary.TButton', command=self.restore_demo_data_action).pack(side='left', padx=(0,8))
+        ttk.Button(admin_buttons, text='Șterge toate datele', style='Danger.TButton', command=self.clear_all_database_action).pack(side='left')
         transfer = ttk.LabelFrame(page,text='  Import și export date  ',style='Card.TLabelframe',padding=20)
         transfer.pack(fill='x')
         ttk.Label(transfer,text='Exportul de backup conține toate tabelele, inclusiv prioritățile și grupele disciplinelor.',style='Hint.TLabel').pack(anchor='w',pady=(0,14))
@@ -195,6 +223,26 @@ class SettingsMixin:
         buttons.pack(anchor='w')
         ttk.Button(buttons,text='Import Excel',style='Secondary.TButton',command=self.import_settings_excel).pack(side='left',padx=(0,8))
         ttk.Button(buttons,text='Exportă toate datele',style='Primary.TButton',command=self.export_settings_excel).pack(side='left')
+
+    def _scroll_settings(self, event):
+        if self.notebook.select() != str(self.tab_settings):
+            return
+        hovered = self.root.winfo_containing(event.x_root, event.y_root)
+        current = hovered
+        while current is not None and current != self.tab_settings:
+            current = current.master
+        if current != self.tab_settings:
+            return
+        if getattr(event, 'num', None) == 4:
+            direction = -1
+        elif getattr(event, 'num', None) == 5:
+            direction = 1
+        elif event.delta:
+            direction = (-1 if event.delta > 0 else 1) * max(1, round(abs(event.delta) / 120))
+        else:
+            return
+        self.settings_canvas.yview_scroll(direction, 'units')
+        return 'break'
 
     def change_theme(self):
         self.preferences['theme'] = self.theme_var.get()

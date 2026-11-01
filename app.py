@@ -46,6 +46,10 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.configure(".", background=self.bg_color, foreground=self.text_color, font=(FONT, 10))
         s.configure("Page.TFrame", background=self.bg_color)
         s.configure("Card.TFrame", background=self.card_bg)
+        s.configure("SectionCard.TFrame", background=self.card_bg,
+                    borderwidth=1, relief="solid", bordercolor=self.border_color)
+        s.configure("SectionTitle.TLabel", background=self.card_bg,
+                    foreground="#000000", font=(FONT, 12, "bold"))
         s.configure("Toolbar.TFrame", background=self.bg_color)
         s.configure("Status.TFrame", background="#FFF0E3")
 
@@ -86,7 +90,7 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         s.configure(
             "Card.TLabelframe.Label",
             background=self.card_bg,
-            foreground="#9A4111",
+            foreground="#000000",
             font=(FONT, 12, "bold"),
         )
 
@@ -136,6 +140,9 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
             focusthickness=0,
         )
         s.map("Primary.TButton", background=[("active", self.primary_dark)])
+        s.configure("Generate.TButton", font=(FONT, 14, "bold"), padding=(32, 18),
+                    background=self.primary_color, foreground="#FFFFFF", borderwidth=0)
+        s.map("Generate.TButton", background=[("active", self.primary_dark)])
         s.configure(
             "Secondary.TButton",
             font=(FONT, 10),

@@ -33,12 +33,8 @@ class ManagementMixin:
 
         title_box = ttk.Frame(header, style="Toolbar.TFrame")
         title_box.pack(side="left", fill="x", expand=True)
-        ttk.Label(title_box, text="Gestionare orar", style="Title.TLabel").pack(anchor="w")
-        ttk.Label(
-            title_box,
-            text="Adaugă datele necesare și generează orarul direct din această pagină.",
-            style="Muted.TLabel",
-        ).pack(anchor="w", pady=(4, 0))
+        ttk.Label(title_box, text="Gestionează datele programului", style="Title.TLabel").pack(anchor="w")
+
 
         actions = ttk.Frame(header, style="Toolbar.TFrame")
         actions.pack(side="right")
@@ -49,16 +45,16 @@ class ManagementMixin:
         self.status_var = tk.StringVar(value="Date încărcate. Completează sau modifică informațiile de mai jos.")
         ttk.Label(status, textvariable=self.status_var, style="Status.TLabel").pack(anchor="w")
 
-        self.prof_card = self.create_card(content, "Profesori", "Adaugă, șterge, sortează sau caută un profesor.")
+        self.prof_card = self.create_card(content, "Lista cadrelor didactice","")
         self.build_professors_section(self.prof_card)
 
-        self.group_card = self.create_card(content, "Grupe de studenți", "Introduceți grupa și numărul de studenți.")
+        self.group_card = self.create_card(content, "Lista grupelor academice", "")
         self.build_groups_section(self.group_card)
 
-        self.room_card = self.create_card(content, "Săli și aule", "Introduceți sala, capacitatea și tipul acesteia.")
+        self.room_card = self.create_card(content, "Lista sălilor de studiu", "")
         self.build_rooms_section(self.room_card)
 
-        self.course_card = self.create_card(content, "Discipline", "Configurați disciplina, profesorul, tipul activității și grupele participante.")
+        self.course_card = self.create_card(content, "Lista disciplinelor universitare", "")
         self.build_courses_section(self.course_card)
 
 
@@ -115,14 +111,44 @@ class ManagementMixin:
             return None
 
     def create_card(self, parent, title, subtitle):
-        # Frame simplu, fara spatiul rezervat legendei unui LabelFrame.
+        # Cadranul ramane afisat; numai continutul sau se ascunde.
         card = ttk.Frame(parent, style="SectionCard.TFrame", padding=(20, 14, 20, 20))
         card.pack(fill="x", expand=True, pady=(0, 12))
-        ttk.Label(
-            card, text=title, style="SectionTitle.TLabel", anchor="w",
-        ).pack(fill="x", anchor="w", pady=(0, 10))
-        ttk.Label(card, text=subtitle, style="Hint.TLabel").pack(anchor="w", pady=(0, 12))
-        return card
+
+        header = ttk.Frame(card, style="Card.TFrame")
+        header.pack(fill="x")
+        ttk.Label(header, text=title, style="SectionTitle.TLabel", anchor="w").pack(
+            side="left", fill="x", expand=True
+        )
+
+        body = ttk.Frame(card, style="Card.TFrame")
+        body.pack(fill="x", pady=(10, 0))
+        ttk.Label(body, text=subtitle, style="Hint.TLabel").pack(
+            anchor="w", pady=(0, 12)
+        )
+
+        def toggle_section():
+            if body.winfo_manager():
+                body.pack_forget()
+                toggle.configure(text="+")
+            else:
+                body.pack(fill="x", pady=(10, 0))
+                toggle.configure(text="−")
+            # Actualizam si limitele de scroll ale paginii.
+            if hasattr(self, "management_canvas"):
+                self.management_canvas.after_idle(
+                    lambda: self.management_canvas.configure(
+                        scrollregion=self.management_canvas.bbox("all")
+                    )
+                )
+
+        toggle = ttk.Button(
+            header, text="−", width=4, style="Quiet.TButton",
+            command=toggle_section,
+        )
+        toggle.pack(side="right", padx=(12, 0))
+        # Restul codului construieste campurile in body; acestea nu sunt distruse.
+        return body
 
     def create_form_grid(self, parent, columns=2):
         grid = ttk.Frame(parent, style="Card.TFrame")
@@ -163,7 +189,7 @@ class ManagementMixin:
         search_wrap.columnconfigure(0, weight=1)
         self.ent_prof_search = ttk.Entry(search_wrap)
         self.add_field(search_wrap, 0, 0, "Caută profesor după nume", self.ent_prof_search)
-        ttk.Button(search_wrap, text="Caută binar", style="Secondary.TButton", command=self.binary_search_prof_action).grid(row=1, column=1, sticky="ew", padx=(12, 0), pady=(0, 8))
+        ttk.Button(search_wrap, text="Caută", style="Secondary.TButton", command=self.binary_search_prof_action).grid(row=1, column=1, sticky="ew", padx=(12, 0), pady=(0, 8))
 
         sortbar = ttk.Frame(parent, style="Card.TFrame")
         sortbar.pack(fill="x", pady=(0, 8))
@@ -258,7 +284,7 @@ class ManagementMixin:
         searchbar.columnconfigure(0, weight=1)
         self.ent_course_search = ttk.Entry(searchbar)
         self.add_field(searchbar, 0, 0, "Caută disciplina după denumire exactă", self.ent_course_search)
-        ttk.Button(searchbar, text="Caută binar", style="Secondary.TButton", command=self.binary_search_course_action).grid(row=1, column=1, sticky="ew", padx=(12, 0), pady=(0, 8))
+        ttk.Button(searchbar, text="Caută", style="Secondary.TButton", command=self.binary_search_course_action).grid(row=1, column=1, sticky="ew", padx=(12, 0), pady=(0, 8))
 
         sortbar = self.create_button_bar(parent)
         ttk.Button(sortbar, text="Sortare discipline A–Z", style="Quiet.TButton", command=lambda: self.sort_courses_action(False)).pack(side="left")
@@ -355,10 +381,10 @@ class ManagementMixin:
         name = self.ent_group_name.get().strip()
         try:
             cnt = int(self.spn_group_count.get())
-            if not 1 <= cnt <= 300:
+            if not 5 <= cnt <= 50:
                 raise ValueError
         except ValueError:
-            return messagebox.showwarning("Atenție", "Numărul de studenți trebuie să fie între 1 și 300!")
+            return messagebox.showwarning("Atenție", "Numărul de studenți trebuie să fie între 5 și 50!")
         if not name:
             return messagebox.showwarning("Atenție", "Introduceți numele grupei!")
         try:
@@ -425,7 +451,7 @@ class ManagementMixin:
             self.tree_prof.selection_set(iid)
             self.tree_prof.see(iid)
             p = sorted_profs[idx]
-            messagebox.showinfo("Găsit (Binary Search)", f"Profesorul '{p['name']}' ({p['department']}) a fost găsit la indexul {idx}!")
+            messagebox.showinfo("Găsit", f"Profesorul '{p['name']}' ({p['department']}) a fost găsit la indexul {idx}!")
         else:
             messagebox.showinfo("Negăsit", "Profesorul nu a fost găsit.")
 

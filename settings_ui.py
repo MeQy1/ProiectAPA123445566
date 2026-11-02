@@ -41,6 +41,11 @@ def apply_palette(app, theme):
     app.primary_dark, app.text_color, app.border_color, app.muted_text = c['dark'], c['text'], c['edge'], c['muted']
     app.root.configure(bg=c['bg'])
     style = ttk.Style(app.root)
+    style.configure('SettingsCard.TFrame', background=c['card'],
+                    borderwidth=1, relief='solid', bordercolor=c['edge'])
+    style.configure('SettingsSectionTitle.TLabel', background=c['card'],
+                    foreground='#000000', font=('Segoe UI', 12, 'bold'))
+
     style.configure('.', background=c['bg'], foreground=c['text'])
     for kind in ('Page.TFrame', 'Toolbar.TFrame'):
         style.configure(kind, background=c['bg'])
@@ -175,7 +180,20 @@ def restore_database(filepath):
 
 
 class SettingsMixin:
+    def _settings_section(self, parent, title):
+        # Un Frame, nu un LabelFrame: evita banda rezervata titlului pe contur.
+        card = ttk.Frame(parent, style='SettingsCard.TFrame', padding=(20, 14, 20, 20))
+        ttk.Label(card, text=title, style='SettingsSectionTitle.TLabel',
+                  anchor='w').pack(fill='x', anchor='w', pady=(0, 16))
+        return card
+
     def build_settings_tab(self):
+        section_style = ttk.Style(self.root)
+        colors = PALETTES.get(self.preferences.get('theme'), PALETTES['Simplist'])
+        section_style.configure('SettingsCard.TFrame', background=colors['card'],
+                                borderwidth=1, relief='solid', bordercolor=colors['edge'])
+        section_style.configure('SettingsSectionTitle.TLabel', background=colors['card'],
+                                foreground='#000000', font=('Segoe UI', 12, 'bold'))
         wrapper = ttk.Frame(self.tab_settings, style='Page.TFrame')
         wrapper.pack(fill='both', expand=True)
         self.settings_canvas = tk.Canvas(wrapper, bg=self.bg_color, highlightthickness=0)
@@ -190,38 +208,37 @@ class SettingsMixin:
         self.root.bind_all('<MouseWheel>', self._scroll_settings, add='+')
         self.root.bind_all('<Button-4>', self._scroll_settings, add='+')
         self.root.bind_all('<Button-5>', self._scroll_settings, add='+')
-        ttk.Label(page, text='Setări aplicație', style='Title.TLabel').pack(anchor='w',pady=(0,8))
-        ttk.Label(page, text='Personalizează interfața, generarea orarului și datele.',style='Muted.TLabel').pack(anchor='w',pady=(0,24))
-        appearance = ttk.LabelFrame(page,text='  Aspect vizual  ',style='Card.TLabelframe',padding=20)
+        ttk.Label(page, text='Setări', style='Title.TLabel').pack(anchor='w',pady=(0,8))
+        appearance = self._settings_section(page, 'Aspect vizual')
         appearance.pack(fill='x',pady=(0,16))
         ttk.Label(appearance,text='Alege tema',style='Field.TLabel').pack(anchor='w',pady=(0,8))
         self.theme_var = tk.StringVar(value=self.preferences['theme'])
         themes = ttk.Frame(appearance,style='Card.TFrame')
         themes.pack(anchor='w')
-        for theme,desc in [('Profesional','Alb, accente portocalii'),('Simplist','Aspectul actual, alb-portocaliu')]:
-            r = ttk.Radiobutton(themes,text=f'{theme} — {desc}',value=theme,variable=self.theme_var,command=self.change_theme)
+        for theme in [('Profesional'),('Simplist')]:
+            r = ttk.Radiobutton(themes,text=f'{theme}',value=theme,variable=self.theme_var,command=self.change_theme)
             r.pack(anchor='w',pady=5)
-        generation = ttk.LabelFrame(page,text='  Generare orar  ',style='Card.TLabelframe',padding=20)
+        generation = self._settings_section(page, 'Generare orar')
         generation.pack(fill='x',pady=(0,16))
         ttk.Label(generation,text='Beam width (1–100)',style='Field.TLabel').pack(anchor='w')
         ttk.Label(generation,text='Valori mai mari caută mai multe variante, dar pot încetini generarea.',style='Hint.TLabel').pack(anchor='w',pady=(4,9))
         self.beam_var = tk.IntVar(value=self.preferences['beam_width'])
         ttk.Spinbox(generation,from_=1,to=100,textvariable=self.beam_var,width=10).pack(anchor='w')
-        ttk.Button(generation,text='Salvează beam width',style='Primary.TButton',command=self.save_beam_width).pack(anchor='w',pady=(12,0))
+        ttk.Button(generation,text='Salvează',style='Primary.TButton',command=self.save_beam_width).pack(anchor='w',pady=(12,0))
         # Operatiile asupra intregii baze de date sunt grupate pe pagina Setari.
-        data_admin = ttk.LabelFrame(page, text='  Administrare date  ', style='Card.TLabelframe', padding=20)
+        data_admin = self._settings_section(page, 'Administrare date')
         data_admin.pack(fill='x', pady=(0,16))
         ttk.Label(data_admin, text='Încarcă datele demonstrative sau șterge toate datele existente.', style='Hint.TLabel').pack(anchor='w', pady=(0,12))
         admin_buttons = ttk.Frame(data_admin, style='Card.TFrame')
         admin_buttons.pack(fill='x')
         ttk.Button(admin_buttons, text='Date demonstrative', style='Secondary.TButton', command=self.restore_demo_data_action).pack(side='left', padx=(0,8))
         ttk.Button(admin_buttons, text='Șterge toate datele', style='Danger.TButton', command=self.clear_all_database_action).pack(side='left')
-        transfer = ttk.LabelFrame(page,text='  Import și export date  ',style='Card.TLabelframe',padding=20)
+        transfer = self._settings_section(page, 'Import și export date')
         transfer.pack(fill='x')
         ttk.Label(transfer,text='Exportul de backup conține toate tabelele, inclusiv prioritățile și grupele disciplinelor.',style='Hint.TLabel').pack(anchor='w',pady=(0,14))
         buttons = ttk.Frame(transfer,style='Card.TFrame')
         buttons.pack(anchor='w')
-        ttk.Button(buttons,text='Import Excel',style='Secondary.TButton',command=self.import_settings_excel).pack(side='left',padx=(0,8))
+        ttk.Button(buttons,text='Import din Excel',style='Secondary.TButton',command=self.import_settings_excel).pack(side='left',padx=(0,8))
         ttk.Button(buttons,text='Exportă toate datele',style='Primary.TButton',command=self.export_settings_excel).pack(side='left')
 
     def _scroll_settings(self, event):

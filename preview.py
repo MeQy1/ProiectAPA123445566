@@ -10,8 +10,8 @@ class PreviewMixin:
 
         hb = ttk.Frame(mf, style="Page.TFrame")
         hb.pack(fill="x", padx=12, pady=(10, 6))
-        ttk.Label(hb, text="Orar săptămânal • Impar / Par", style="PreviewTitle.TLabel").pack(side="left")
-        ttk.Button(hb, text="Exportă Excel (.xlsx)", style="Primary.TButton", command=self.export_excel).pack(side="right")
+        ttk.Label(hb, text="Rezultatul generării", style="PreviewTitle.TLabel").pack(side="left")
+        ttk.Button(hb, text="Exportă", style="Primary.TButton", command=self.export_excel).pack(side="right")
 
         cc = ttk.Frame(mf)
         cc.pack(fill="both", expand=True, padx=12, pady=6)

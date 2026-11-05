@@ -12,7 +12,7 @@ from tkinter import filedialog, messagebox
 from manager import ScheduleEngine
 
 COLUMNS = ('Profesor', 'Departament', 'Grupă', 'Studenți', 'Sală', 'Capacitate',
-           'Tip sală', 'Disciplină', 'Profesor asignat', 'Activitate', 'Ore')
+           'Tip sală', 'Disciplină', 'Profesor asignat', 'Activitate', 'Ore', 'Zile permise', 'Perechi permise')
 TYPES = {'aula': 'Aulă', 'aulă': 'Aulă', 'curs': 'Curs', 'lab': 'Laborator',
          'laborator': 'Laborator', 'seminar': 'Seminar'}
 
@@ -35,7 +35,7 @@ def fix_row_dialog(parent, index, values, problem, existing_rooms):
     """Return edited 11 cells, or None to abort entire import."""
     win = tk.Toplevel(parent)
     win.title(f'Corectare import – rândul {index}')
-    win.geometry('690x690')
+    win.geometry('750x800')
     win.transient(parent)
     win.grab_set()
     ttk.Label(win, text=f'Rândul {index}: {problem}', wraplength=630,
@@ -51,10 +51,10 @@ def fix_row_dialog(parent, index, values, problem, existing_rooms):
     frame.columnconfigure(1, weight=1)
     room_names = [r[0] for r in existing_rooms]
     if room_names:
-        ttk.Label(frame, text='Sau folosește o sală existentă:').grid(row=11, column=0, sticky='w', pady=8)
+        ttk.Label(frame, text='Sau folosește o sală existentă:').grid(row=len(COLUMNS), column=0, sticky='w', pady=8)
         selected = tk.StringVar()
         combo = ttk.Combobox(frame, state='readonly', textvariable=selected, values=room_names)
-        combo.grid(row=11, column=1, sticky='ew')
+        combo.grid(row=len(COLUMNS), column=1, sticky='ew')
         def use_existing(*_):
             room = next((r for r in existing_rooms if r[0] == selected.get()), None)
             if room:
@@ -82,10 +82,15 @@ def import_file(path, parent=None, resolver=None):
     wb = load_workbook(path, read_only=True, data_only=True)
     try:
         ws = wb.active
-        header = [as_text(v).lower() for v in next(ws.iter_rows(min_row=1, max_row=1, max_col=11, values_only=True))]
-        if len(header) != 11 or not ('profesor' in header[0] and 'sala' in header[4]):
-            raise ValueError('Fișierul nu are formatul așteptat (11 coloane, ca în Date intrare.xlsx).')
-        data = [(i, list(cells)) for i, cells in enumerate(ws.iter_rows(min_row=2, max_col=11, values_only=True), 2)
+        header = [as_text(v).lower() for v in next(ws.iter_rows(min_row=1, max_row=1, max_col=13, values_only=True))]
+        if not ('profesor' in header[0] and 'sala' in header[4]):
+            raise ValueError('Fișierul nu are formatul așteptat.')
+        if any(header[11:]) and header[11:] != ['zile permise', 'perechi permise']:
+            raise ValueError('Coloanele opționale trebuie să fie: Zile permise, Perechi permise.')
+        has_availability = header[11:] == ['zile permise', 'perechi permise']
+        width = 13 if has_availability else 11
+        data = [(i, list(cells) if has_availability else list(cells) + ['', ''])
+                for i, cells in enumerate(ws.iter_rows(min_row=2, max_col=width, values_only=True), 2)
                 if any(as_text(x) for x in cells)]
     finally:
         wb.close()
@@ -125,9 +130,19 @@ def import_file(path, parent=None, resolver=None):
 
 
 def _import_row(conn, x, counts):
-    if len(x) != 11:
-        raise ValueError('Trebuie 11 coloane')
-    p, dept, group, students, room, capacity, room_type, course, assigned, activity, hours = map(as_text, x)
+    if len(x) != 13:
+        raise ValueError('Trebuie 11 sau 13 coloane')
+    p, dept, group, students, room, capacity, room_type, course, assigned, activity, hours, days_text, pairs_text = map(as_text, x)
+    days_text = days_text or ','.join(ScheduleEngine.DAYS)
+    pairs_text = pairs_text or ','.join(map(str, ScheduleEngine.PAIRS))
+    days = {s.strip() for s in days_text.split(',')}
+    pairs = {s.strip() for s in pairs_text.split(',')}
+    if not days or not days.issubset(ScheduleEngine.DAYS):
+        raise ValueError('Zile permise invalide. Folosește Luni,Marți,Miercuri,Joi,Vineri.')
+    if not pairs or not pairs.issubset({str(p) for p in ScheduleEngine.PAIRS}):
+        raise ValueError('Perechi permise invalide. Folosește numerele 1–7.')
+    days_text = ','.join(d for d in ScheduleEngine.DAYS if d in days)
+    pairs_text = ','.join(str(p) for p in ScheduleEngine.PAIRS if str(p) in pairs)
     if bool(p) != bool(dept):
         raise ValueError('Profesorul și departamentul trebuie completate împreună')
     if p:
@@ -172,16 +187,16 @@ def _import_row(conn, x, counts):
         if n > 8:
             raise ValueError('Ore pe săptămână trebuie să fie între 1 și 8')
         # Same course/professor/type/hours across different rows = same course with multiple groups.
-        existing = conn.execute('SELECT id, target_groups FROM courses WHERE name=? AND professor=? AND activity_type=? AND academic_hours=?',
-                                (course, assigned, kind, n)).fetchone()
+        existing = conn.execute('SELECT id, target_groups FROM courses WHERE name=? AND professor=? AND activity_type=? AND academic_hours=? AND allowed_days=? AND allowed_pairs=?',
+                                (course, assigned, kind, n, days_text, pairs_text)).fetchone()
         if existing:
             groups = [g.strip() for g in existing[1].split(',') if g.strip()]
             if group not in groups:
                 groups.append(group)
                 conn.execute('UPDATE courses SET target_groups=? WHERE id=?', (','.join(groups), existing[0]))
         else:
-            conn.execute('INSERT INTO courses(name, professor, activity_type, academic_hours, target_groups, priority) VALUES (?,?,?,?,?,?)',
-                         (course, assigned, kind, n, group, 30))
+            conn.execute('INSERT INTO courses(name, professor, activity_type, academic_hours, target_groups, priority, allowed_days, allowed_pairs) VALUES (?,?,?,?,?,?,?,?)',
+                         (course, assigned, kind, n, group, 30, days_text, pairs_text))
             counts['discipline'] += 1
 
 

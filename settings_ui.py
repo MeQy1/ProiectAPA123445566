@@ -17,7 +17,7 @@ TABLES = {
     'Profesori': ('professors', ('name', 'department')),
     'Grupe': ('student_groups', ('name', 'student_count')),
     'Sali': ('rooms', ('name', 'capacity', 'room_type')),
-    'Discipline': ('courses', ('name', 'professor', 'activity_type', 'academic_hours', 'target_groups', 'priority')),
+    'Discipline': ('courses', ('name', 'professor', 'activity_type', 'academic_hours', 'target_groups', 'priority', 'allowed_days', 'allowed_pairs')),
 }
 
 
@@ -104,6 +104,15 @@ def apply_palette(app, theme):
     style.map('Treeview', background=[('selected',c['soft'])], foreground=[('selected',c['text'])])
     style.configure('Treeview.Heading', background=c['soft'], foreground=c['text'], bordercolor=c['edge'])
     style.map('Treeview.Heading', background=[('active', c['edge'])], foreground=[('active', c['text'])])
+    style.configure('SelectAll.TButton', font=('Segoe UI', 10, 'bold'),
+                    padding=(18, 11), background=c['primary'], foreground='#FFFFFF', borderwidth=1)
+    style.map('SelectAll.TButton', background=[('active', c['dark'])],
+              foreground=[('active', '#FFFFFF')])
+    style.configure('DeselectAll.TButton', font=('Segoe UI', 10, 'bold'),
+                    padding=(18, 11), background=c['soft'], foreground=c['text'],
+                    bordercolor=c['primary'], borderwidth=1, relief='solid')
+    style.map('DeselectAll.TButton', background=[('active', c['edge'])],
+              foreground=[('active', c['text'])])
     for kind in ('Vertical.TScrollbar','Horizontal.TScrollbar'):
         style.configure(kind, background=c['edge'], troughcolor=c['bg'], arrowcolor=c['text'])
     # Classic tk widgets do not inherit ttk styles.
@@ -123,6 +132,11 @@ def apply_palette(app, theme):
         )
     if hasattr(app, 'settings_canvas'):
         app.settings_canvas.configure(bg=c['bg'])
+    for list_name in ('lst_course_days', 'lst_course_pairs'):
+        if hasattr(app, list_name):
+            getattr(app, list_name).configure(
+                bg=c['field'], fg=c['text'], selectbackground=c['primary'],
+                selectforeground='#FFFFFF', highlightbackground=c['edge'])
     if hasattr(app, 'management_canvas'):
         app.management_canvas.configure(bg=c['bg'])
 
@@ -156,16 +170,25 @@ def restore_database(filepath):
         for sheet, (_, columns) in TABLES.items():
             rows = wb[sheet].iter_rows(values_only=True)
             header = next(rows, None)
-            if not header or tuple(header[:len(columns)]) != columns:
+            old_format = (sheet == 'Discipline' and header
+                          and tuple(header[:6]) == columns[:6]
+                          and len(header) == 6)
+            if not header or (tuple(header[:len(columns)]) != columns and not old_format):
                 raise ValueError(f'Coloane incorecte în foaia {sheet}.')
             values = []
             for index, row in enumerate(rows, 2):
-                cells = row[:len(columns)]
+                cells = tuple(row[:6]) + ('Luni,Marți,Miercuri,Joi,Vineri', '1,2,3,4,5,6,7') if old_format else tuple(row[:len(columns)])
                 if not any(x is not None and str(x).strip() for x in cells):
                     continue
                 if any(x is None or not str(x).strip() for x in cells):
                     raise ValueError(f'Date lipsă în foaia {sheet}, rândul {index}.')
-                values.append(tuple(cells))
+                if sheet == 'Discipline':
+                    from manager import ScheduleEngine
+                    days = {x.strip() for x in str(cells[-2]).split(',')}
+                    pairs = {x.strip() for x in str(cells[-1]).split(',')}
+                    if not days or not days.issubset(ScheduleEngine.DAYS) or not pairs or not pairs.issubset({str(p) for p in ScheduleEngine.PAIRS}):
+                        raise ValueError(f'Zile sau perechi invalide în foaia {sheet}, rândul {index}.')
+                values.append(cells)
             data[sheet] = values
     finally:
         wb.close()

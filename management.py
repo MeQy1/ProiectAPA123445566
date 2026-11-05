@@ -229,8 +229,8 @@ class ManagementMixin:
         self.add_field(grid, 0, 2, "Tipul sălii", self.cmb_room_type, padx=(12, 0))
 
         bar = self.create_button_bar(parent)
-        ttk.Button(bar, text="+ Adaugă sală", style="Primary.TButton", command=self.add_room).pack(side="left")
-        ttk.Button(bar, text="Șterge sala selectată", style="Secondary.TButton", command=lambda: self.delete_selected(self.tree_rooms, "rooms", "name")).pack(side="left", padx=8)
+        ttk.Button(bar, text="Adaugă+ sală", style="Primary.TButton", command=self.add_room).pack(side="left")
+        ttk.Button(bar, text="Șterge- sala ", style="Secondary.TButton", command=lambda: self.delete_selected(self.tree_rooms, "rooms", "name")).pack(side="left", padx=8)
 
         self.tree_rooms = self.make_tree(parent, ("Sală", "Capacitate", "Tip"), headings=("Sală", "Capacitate", "Tip"), widths=[300, 170, 190], height=6)
 
@@ -249,7 +249,7 @@ class ManagementMixin:
         self.add_field(grid2, 0, 0, "Tip activitate", self.cmb_course_type)
         self.add_field(grid2, 0, 1, "Ore academice pe săptămână", self.spn_course_hours, padx=(12, 0))
 
-        ttk.Label(parent, text="Grupe participante", style="Field.TLabel").pack(anchor="w", pady=(2, 4))
+        ttk.Label(parent, text="Grupele acedemice", style="Field.TLabel").pack(anchor="w", pady=(2, 4))
         ttk.Label(parent, text="Selectează una sau mai multe grupe pentru această disciplină.", style="Hint.TLabel").pack(anchor="w", pady=(0, 4))
         list_frame = ttk.Frame(parent, style="Card.TFrame")
         list_frame.pack(fill="x", pady=(0, 10))
@@ -272,27 +272,60 @@ class ManagementMixin:
         self.lst_course_groups.pack(fill="x")
 
         bar = self.create_button_bar(parent)
-        ttk.Button(bar, text="Selectează toate", style="Quiet.TButton",
-                   command=lambda: self.lst_course_groups.select_set(0, tk.END)).pack(side="left")
-        ttk.Button(bar, text="Deselectează toate", style="Quiet.TButton",
-                   command=lambda: self.lst_course_groups.selection_clear(0, tk.END)).pack(side="left", padx=(8, 0))
-        ttk.Button(bar, text="+ Adaugă disciplina", style="Primary.TButton", command=self.add_course).pack(side="left", padx=8)
-        ttk.Button(bar, text="Șterge disciplina selectată", style="Secondary.TButton", command=lambda: self.delete_selected(self.tree_courses, "courses", "id")).pack(side="left")
+
+        ttk.Button(bar, text="Deselectează tot", style="Secondary.TButton",
+                   command=lambda: self.lst_course_groups.selection_clear(0, tk.END)).pack(side="right", padx=(8, 0))
+        ttk.Button(bar, text="Selectează tot", style="Secondary.TButton",
+                   command=lambda: self.lst_course_groups.select_set(0, tk.END)).pack(side="right")
+
+        # Restricții pe disciplină: selectarea multiplă nu necesită Ctrl.
+        for heading, values, attr, height in (
+            ("Zile permise", ["Luni", "Marți", "Miercuri", "Joi", "Vineri"], "lst_course_days", 5),
+            ("Perechi permise (1–7)", [f"P{i}" for i in range(1, 8)], "lst_course_pairs", 7),
+        ):
+            ttk.Label(parent, text=heading, style="Field.TLabel").pack(anchor="w", pady=(10, 4))
+            box = tk.Listbox(parent, selectmode="multiple", exportselection=False,
+                             height=height, font=("Segoe UI", 10), relief="solid",
+                             borderwidth=1, highlightthickness=1)
+            box.pack(fill="x")
+            for value in values:
+                box.insert(tk.END, value)
+            box.select_set(0, tk.END)
+            setattr(self, attr, box)
+            row = self.create_button_bar(parent)
+
+            ttk.Button(row, text="Deselectează tot", style="Secondary.TButton",
+                       command=lambda b=box: b.selection_clear(0, tk.END)).pack(side="right", padx=(8, 0))
+            ttk.Button(row, text="Selectează tot", style="Secondary.TButton",
+                   command=lambda b=box: b.select_set(0, tk.END)).pack(side="right")
+        update_bar = self.create_button_bar(parent)
+        ttk.Button(update_bar, text="Adaugă+ disciplina", style="Primary.TButton", command=self.add_course).pack(side="left", padx=8)
+        ttk.Button(update_bar, text="Șterge- disciplina", style="Secondary.TButton", command=lambda: self.delete_selected(self.tree_courses, "courses", "id")).pack(side="left")
+
+        ttk.Button(update_bar, text="Resetează zilele și perechile pentru un obiect",
+                   style="Primary.TButton", command=self.update_course_availability).pack(anchor="e")
+
+
+        cols = ("ID", "Obiect", "Profesor", "Tip", "Ore", "Grupe Asignate", "Zile", "Perechi")
+        heads = ("ID", "Disciplina", "Profesor", "Tip", "Ore", "Grupe participante", "Zile permise", "Perechi")
+        self.tree_courses = self.make_tree(parent, cols, headings=heads,
+                                           widths=[50, 220, 180, 100, 100, 250, 180, 100], height=7)
+        self.tree_courses.bind("<<TreeviewSelect>>", self.select_course_availability)
+
 
         searchbar = ttk.Frame(parent, style="Card.TFrame")
         searchbar.pack(fill="x", pady=(0, 10))
         searchbar.columnconfigure(0, weight=1)
         self.ent_course_search = ttk.Entry(searchbar)
-        self.add_field(searchbar, 0, 0, "Caută disciplina după denumire exactă", self.ent_course_search)
+        self.add_field(searchbar, 0, 0, "aută disciplina după denumire", self.ent_course_search)
         ttk.Button(searchbar, text="Caută", style="Secondary.TButton", command=self.binary_search_course_action).grid(row=1, column=1, sticky="ew", padx=(12, 0), pady=(0, 8))
 
-        sortbar = self.create_button_bar(parent)
-        ttk.Button(sortbar, text="Sortare discipline A–Z", style="Quiet.TButton", command=lambda: self.sort_courses_action(False)).pack(side="left")
-        ttk.Button(sortbar, text="Sortare discipline Z–A", style="Quiet.TButton", command=lambda: self.sort_courses_action(True)).pack(side="left", padx=8)
 
-        cols = ("ID", "Obiect", "Profesor", "Tip", "Ore", "Grupe Asignate")
-        heads = ("ID", "Disciplina", "Profesor", "Tip", "Ore", "Grupe participante")
-        self.tree_courses = self.make_tree(parent, cols, headings=heads, widths=[50, 220, 180, 100, 100, 360], height=7)
+        sortbar = self.create_button_bar(parent)
+        ttk.Button(sortbar, text="Sortare discipline A–Z", style="Quiet.TButton",
+                   command=lambda: self.sort_courses_action(False)).pack(side="left")
+        ttk.Button(sortbar, text="Sortare discipline Z–A", style="Quiet.TButton",
+                   command=lambda: self.sort_courses_action(True)).pack(side="left", padx=8)
 
     @staticmethod
     def format_hours_short(h):
@@ -329,7 +362,7 @@ class ManagementMixin:
             self.tree_courses.insert(
                 "",
                 "end",
-                values=(c["id"], c["name"], c["professor"], c["activity_type"], self.format_hours_short(c["academic_hours"]), c["target_groups"]),
+                values=(c["id"], c["name"], c["professor"], c["activity_type"], self.format_hours_short(c["academic_hours"]), c["target_groups"], c["allowed_days"], c["allowed_pairs"]),
             )
 
     def clear_all_database_action(self):
@@ -411,6 +444,49 @@ class ManagementMixin:
         except sqlite3.IntegrityError:
             messagebox.showerror("Eroare", "Această sală / aulă există deja!")
 
+    def _get_course_availability(self):
+        days = ",".join(self.lst_course_days.get(i) for i in self.lst_course_days.curselection())
+        pairs = ",".join(self.lst_course_pairs.get(i)[1:] for i in self.lst_course_pairs.curselection())
+        return days, pairs
+
+    def select_course_availability(self, event=None):
+        selected = self.tree_courses.selection()
+        if not selected:
+            return
+        values = self.tree_courses.item(selected[0], "values")
+        if not values:
+            return
+        course = next((c for c in self.courses if c["id"] == int(values[0])), None)
+        if not course:
+            return
+        allowed_days = set(course["allowed_days"].split(","))
+        allowed_pairs = set(course["allowed_pairs"].split(","))
+        for box, allowed, convert in (
+            (self.lst_course_days, allowed_days, lambda s: s),
+            (self.lst_course_pairs, allowed_pairs, lambda s: s[1:]),
+        ):
+            box.selection_clear(0, tk.END)
+            for i in range(box.size()):
+                if convert(box.get(i)) in allowed:
+                    box.selection_set(i)
+
+    def update_course_availability(self):
+        selected = self.tree_courses.selection()
+        if not selected:
+            return messagebox.showwarning("Selectează disciplina",
+                "Selectează mai întâi o disciplină din tabel.")
+        days, pairs = self._get_course_availability()
+        if not days or not pairs:
+            return messagebox.showwarning("Intervale necesare",
+                "Selectează cel puțin o zi și o pereche.")
+        course_id = int(self.tree_courses.item(selected[0], "values")[0])
+        DatabaseManager.query(
+            "UPDATE courses SET allowed_days=?, allowed_pairs=? WHERE id=?",
+            (days, pairs, course_id),
+        )
+        self.refresh_all_views()
+        messagebox.showinfo("Salvat", "Zilele și perechile permise au fost salvate.")
+
     def add_course(self):
         name = self.ent_course_name.get().strip()
         prof = self.cmb_course_prof.get().strip()
@@ -426,10 +502,14 @@ class ManagementMixin:
         if not name or not prof or not sel_groups:
             return messagebox.showwarning("Atenție", "Completați disciplina, profesorul și selectați cel puțin o grupă!")
 
+        allowed_days, allowed_pairs = self._get_course_availability()
+        if not allowed_days or not allowed_pairs:
+            return messagebox.showwarning("Intervale necesare",
+                "Selectează cel puțin o zi și o pereche pentru disciplină.")
         prio = 30 if act == "Curs" else (25 if act == "Laborator" else 20)
         DatabaseManager.query(
-            "INSERT INTO courses (name, professor, activity_type, academic_hours, target_groups, priority) VALUES (?, ?, ?, ?, ?, ?)",
-            (name, prof, act, hours, ",".join(sel_groups), prio),
+            "INSERT INTO courses (name, professor, activity_type, academic_hours, target_groups, priority, allowed_days, allowed_pairs) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (name, prof, act, hours, ",".join(sel_groups), prio, allowed_days, allowed_pairs),
         )
         self.ent_course_name.delete(0, tk.END)
         self.refresh_all_views()
@@ -468,7 +548,7 @@ class ManagementMixin:
             self.tree_courses.insert("", "end", values=(
                 course["id"], course["name"], course["professor"],
                 course["activity_type"], self.format_hours_short(course["academic_hours"]),
-                course["target_groups"],
+                course["target_groups"], course["allowed_days"], course["allowed_pairs"],
             ))
 
     def binary_search_course_action(self):

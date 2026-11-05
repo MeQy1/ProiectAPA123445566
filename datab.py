@@ -38,6 +38,10 @@ class DatabaseManager:
             course_cols = [x[1] for x in conn.execute('PRAGMA table_info(courses)')]
             if 'target_groups' not in course_cols:
                 conn.execute("ALTER TABLE courses ADD COLUMN target_groups TEXT NOT NULL DEFAULT ''")
+            if 'allowed_days' not in course_cols:
+                conn.execute("ALTER TABLE courses ADD COLUMN allowed_days TEXT NOT NULL DEFAULT 'Luni,Marți,Miercuri,Joi,Vineri'")
+            if 'allowed_pairs' not in course_cols:
+                conn.execute("ALTER TABLE courses ADD COLUMN allowed_pairs TEXT NOT NULL DEFAULT '1,2,3,4,5,6,7'")
         if populate_demo:
             cls.seed_demo_data_if_empty()
 

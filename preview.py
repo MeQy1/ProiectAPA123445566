@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
+from sorting import BinarySearchEngine
 from manager import ScheduleEngine
 from settings_ui import PALETTES
 
@@ -12,6 +13,19 @@ class PreviewMixin:
         hb.pack(fill="x", padx=12, pady=(10, 6))
         ttk.Label(hb, text="Rezultatul generării", style="PreviewTitle.TLabel").pack(side="left")
         ttk.Button(hb, text="Exportă", style="Primary.TButton", command=self.export_excel).pack(side="right")
+
+        # Căutarea este exclusiv vizuală, în pagina 2.
+        search = ttk.Frame(mf, style="Page.TFrame")
+        search.pack(fill="x", padx=12, pady=(0, 8))
+        ttk.Label(search, text="Caută disciplina:", style="Muted.TLabel").pack(side="left", padx=(0, 8))
+        self.ent_schedule_search = ttk.Entry(search, width=38)
+        self.ent_schedule_search.pack(side="left", padx=(0, 8))
+        self.ent_schedule_search.bind("<Return>", lambda event: self.search_schedule_course())
+        ttk.Button(search, text="Căutare", style="Primary.TButton",
+                   command=self.search_schedule_course).pack(side="left")
+        ttk.Button(search, text="Șterge evidențierea", style="Secondary.TButton",
+                   command=self.clear_schedule_highlight).pack(side="left", padx=(8, 0))
+        self.highlight_course_name = None
 
         cc = ttk.Frame(mf)
         cc.pack(fill="both", expand=True, padx=12, pady=6)
@@ -27,6 +41,70 @@ class PreviewMixin:
         cc.grid_columnconfigure(0, weight=1)
         # Scroll-ul este administrat central din ManagementMixin.
 
+
+    def clear_schedule_highlight(self):
+        """Revine la culorile normale, fără a modifica orarul generat."""
+        self.highlight_course_name = None
+        if hasattr(self, "ent_schedule_search"):
+            self.ent_schedule_search.delete(0, tk.END)
+        self.draw_visual_schedule()
+
+    def search_schedule_course(self):
+        """Caută exact numele disciplinei prin BinarySearchEngine."""
+        query = self.ent_schedule_search.get().strip()
+        if not query:
+            messagebox.showwarning("Căutare disciplină", "Introdu numele unei discipline.", parent=self.root)
+            return
+        if not self.last_timetable:
+            messagebox.showwarning("Orar indisponibil", "Generează mai întâi orarul.", parent=self.root)
+            return
+
+        # Listă sortată după nume, conform cerinței căutării binare.
+        unique_names = sorted({session["course"] for session in self.last_timetable.values()},
+                              key=lambda name: name.strip().casefold())
+        ordered = [{"name": name} for name in unique_names]
+        result = BinarySearchEngine.search(ordered, query)
+        if result == -1:
+            self.highlight_course_name = None
+            self.draw_visual_schedule()
+            messagebox.showinfo("Disciplina nu a fost găsită",
+                                f"Disciplina «{query}» nu apare în orarul generat.", parent=self.root)
+            return
+
+        found_name = ordered[result]["name"]
+        self.highlight_course_name = found_name.casefold().strip()
+        sessions = [s for s in self.last_timetable.values()
+                    if s["course"].strip().casefold() == self.highlight_course_name]
+        self.draw_visual_schedule()
+
+        # Deplasăm afișarea la prima apariție, când aceasta se află mai jos/lateral.
+        first = min(sessions, key=lambda s: (
+            ScheduleEngine.DAYS.index(s["day"]), s["pair"]))
+        row_index = ScheduleEngine.DAYS.index(first["day"]) * len(ScheduleEngine.PAIRS)
+        row_index += ScheduleEngine.PAIRS.index(first["pair"])
+        content_height = 40 + len(ScheduleEngine.DAYS) * len(ScheduleEngine.PAIRS) * 68 + 20
+        self.canvas.yview_moveto(max(0, (40 + row_index * 68 - 80) / content_height))
+        groups = first.get("groups", [])
+        visible_groups = [g["name"] for g in self.groups]
+        if groups and groups[0] in visible_groups:
+            left = 90 + 135 + visible_groups.index(groups[0]) * 265
+            content_width = 90 + 135 + len(visible_groups) * 265
+            self.canvas.xview_moveto(max(0, (left - 140) / max(content_width, 1)))
+        messagebox.showinfo("Disciplina găsită",
+                            f"Disciplina «{found_name}» a fost găsită în orar.\n"
+                            f"Au fost evidențiate toate aparițiile ei.",
+                            parent=self.root)
+
+    def build_highlight_lookup(self):
+        """Index pe celulă și paritate, nu pe textul desenat în Canvas."""
+        matches = set()
+        selected = getattr(self, "highlight_course_name", None)
+        if selected:
+            for session in self.last_timetable.values():
+                if session["course"].strip().casefold() == selected:
+                    for group in session["groups"]:
+                        matches.add((session["day"], session["pair"], group, session["parity"]))
+        return matches
 
     def build_cell_lookup(self):
         lookup = {}
@@ -54,6 +132,10 @@ class PreviewMixin:
         self.canvas.configure(bg=colors["bg"])
         names = [g["name"] for g in self.groups]
         lookup = self.build_cell_lookup()
+        matches = self.build_highlight_lookup()
+        # Această culoare se aplică numai pe Canvas; nu ajunge în Excel.
+        search_fill = "#A7E8DD"
+        search_text = "#163D37"
         cw_day, cw_pair, cw_grp, hh, rh = 90, 135, 265, 40, 68
         total_w = cw_day + cw_pair + len(names) * cw_grp
 
@@ -78,9 +160,12 @@ class PreviewMixin:
                 for name in names:
                     data = lookup.get((day, pair, name), {})
                     if "FULL" in data:
-                        self.canvas.create_rectangle(gx, y, gx + cw_grp, y + rh, fill=cell, outline=edge)
+                        marked = (day, pair, name, "FULL") in matches
+                        self.canvas.create_rectangle(gx, y, gx + cw_grp, y + rh,
+                                                     fill=search_fill if marked else cell, outline=edge)
                         self.canvas.create_text(gx + cw_grp / 2, y + rh / 2, text=data["FULL"],
-                                                fill=text, font=("Segoe UI", 8), justify="center", width=cw_grp - 10)
+                                                fill=search_text if marked else text,
+                                                font=("Segoe UI", 8), justify="center", width=cw_grp - 10)
                     elif "IMPAR" in data or "PAR" in data:
                         middle = y + rh / 2
                         for parity, y1, y2, active_bg, free_text in (
@@ -88,11 +173,13 @@ class PreviewMixin:
                             ("PAR", middle, y + rh, highlighted_alt, "— (Par liber)"),
                         ):
                             present = parity in data
+                            marked = present and (day, pair, name, parity) in matches
                             self.canvas.create_rectangle(gx, y1, gx + cw_grp, y2,
-                                                         fill=active_bg if present else cell, outline=edge)
+                                                         fill=search_fill if marked else (active_bg if present else cell),
+                                                         outline=edge)
                             value = f"[{parity}] {data[parity].replace(chr(10), ' | ')}" if present else free_text
                             self.canvas.create_text(gx + cw_grp / 2, (y1 + y2) / 2, text=value,
-                                                    fill=highlighted_text if present else muted,
+                                                    fill=search_text if marked else (highlighted_text if present else muted),
                                                     font=("Segoe UI", 7, "bold" if present else "normal"),
                                                     width=cw_grp - 8)
                     else:

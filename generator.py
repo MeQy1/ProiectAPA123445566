@@ -51,6 +51,19 @@ class GeneratorMixin:
             self.status_var.set('Lipsesc grupele, disciplinele sau sălile.')
             messagebox.showwarning('Date insuficiente', 'Adăugați grupe, discipline și săli înainte de generare.')
             return
+        availability_problems = ScheduleEngine.availability_errors(
+            self.courses, self.groups, self.rooms
+        )
+        if availability_problems:
+            self.status_var.set('Restricțiile de zile/perechi nu permit generarea orarului.')
+            messagebox.showerror(
+                'Prea puține zile sau perechi permise',
+                'Orarul nu poate fi creat cu intervalele selectate:\n\n'
+                + '\n'.join(availability_problems)
+                + '\n\nSelectează mai multe zile sau perechi în Lista disciplinelor universitare.',
+                parent=self.root,
+            )
+            return
         variables, meta, domains, errors = ScheduleEngine.build_variables_and_domains(
             self.groups, self.courses, self.rooms, self.timeslots
         )
@@ -88,14 +101,22 @@ class GeneratorMixin:
         self.root.update_idletasks()
         if not ScheduleEngine.run_ac3(variables, meta, domains):
             self.status_var.set('Nu există soluție pentru constrângerile introduse (AC-3).')
-            messagebox.showwarning('Conflict', 'Unele activități nu au niciun interval valid.')
+            messagebox.showwarning('Conflict de programare',
+                'Nu există o combinație compatibilă pentru toate activitățile.\n'
+                'Verifică zilele și perechile permise, profesorii, grupele și sălile.\n'
+                'Poate fi necesar să permiți mai multe intervale pentru una sau mai multe discipline.',
+                parent=self.root)
             return
         self.status_var.set('Construiesc orarul cu Beam Search...')
         self.root.update_idletasks()
         timetable = ScheduleEngine.beam_search(variables, meta, domains, self.timeslots, beam_width=self.preferences["beam_width"])
         if len(timetable) != len(variables):
             self.status_var.set('Nu s-a găsit un orar complet. Verificați sălile și încărcarea profesorilor.')
-            messagebox.showwarning('Fără soluție', 'Încercați mai multe săli sau reduceți restricțiile.')
+            messagebox.showwarning('Orar incomplet',
+                'Nu s-a putut găsi un orar complet cu restricțiile actuale.\n'
+                'Verifică dacă disciplinele au suficiente zile și perechi permise și dacă există săli disponibile.\n'
+                'Poți permite mai multe intervale sau crește Beam width din Setări.',
+                parent=self.root)
             return
         self.last_timetable = timetable
         self.status_var.set(f'Orar generat: {len(timetable)} activități. Consultați pagina 2.')

@@ -194,6 +194,15 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
             relief="flat",
         )
 
+        s.configure("SelectAll.TButton", font=(FONT, 10, "bold"),
+                    padding=(18, 11), background="#F47421", foreground="#FFFFFF", borderwidth=1)
+        s.map("SelectAll.TButton", background=[("active", "#C95712")],
+              foreground=[("active", "#FFFFFF")])
+        s.configure("DeselectAll.TButton", font=(FONT, 10, "bold"),
+                    padding=(18, 11), background="#FFF0E5", foreground="#8A3B12",
+                    bordercolor="#F47421", borderwidth=1, relief="solid")
+        s.map("DeselectAll.TButton", background=[("active", "#F6C9A7")])
+
         s.configure(
             "Vertical.TScrollbar",
             background="#F4DDCB",
@@ -217,8 +226,8 @@ class UniversityOrarApp(ManagementMixin, GeneratorMixin, PreviewMixin, ExcelExpo
         self.rooms = [{"id": r[0], "name": r[1], "capacity": r[2], "room_type": r[3]} for r in q("SELECT id, name, capacity, room_type FROM rooms", fetch=True)]
         self.groups = [{"id": r[0], "name": r[1], "student_count": r[2]} for r in q("SELECT id, name, student_count FROM student_groups", fetch=True)]
         self.courses = [
-            {"id": r[0], "name": r[1], "professor": r[2], "activity_type": r[3], "academic_hours": r[4], "target_groups": r[5], "priority": r[6]}
-            for r in q("SELECT id, name, professor, activity_type, academic_hours, target_groups, priority FROM courses", fetch=True)
+            {"id": r[0], "name": r[1], "professor": r[2], "activity_type": r[3], "academic_hours": r[4], "target_groups": r[5], "priority": r[6], "allowed_days": r[7], "allowed_pairs": r[8]}
+            for r in q("SELECT id, name, professor, activity_type, academic_hours, target_groups, priority, allowed_days, allowed_pairs FROM courses", fetch=True)
         ]
 
     def build_ui(self):

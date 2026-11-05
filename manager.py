@@ -20,12 +20,81 @@ class ScheduleEngine:
         return ["FULL"] * (h // 2) + (["SPLIT"] if h % 2 else [])
 
     @classmethod
+    def availability_errors(cls, courses, groups, rooms):
+        """Diagnostichează restricții de timp imposibil de satisfăcut pentru o disciplină.
+
+        Pentru cursurile în aulă, grupe diferite pot participa la aceeași ședință
+        dacă încap în aceeași aulă; pentru seminare/laboratoare sunt ședințe pe grupă.
+        O ședință impar/par poate partaja un interval cu alta, deci pragul este
+        conservator și evită alarmele false.
+        """
+        from math import ceil
+
+        errors = []
+        group_sizes = {g['name']: g['student_count'] for g in groups}
+        aula_capacity = max((r['capacity'] for r in rooms
+                             if r['room_type'] == 'Aulă'), default=0)
+        for course in courses:
+            days = {x.strip() for x in course.get('allowed_days', ','.join(cls.DAYS)).split(',') if x.strip()}
+            raw_pairs = [x.strip() for x in course.get('allowed_pairs', ','.join(map(str, cls.PAIRS))).split(',') if x.strip()]
+            try:
+                pairs = {int(x) for x in raw_pairs}
+            except ValueError:
+                pairs = set()
+            if not days or not days.issubset(set(cls.DAYS)) or not pairs or not pairs.issubset(set(cls.PAIRS)):
+                errors.append(f"• {course['name']}: selecție invalidă de zile sau perechi.")
+                continue
+            slots = len(days) * len(pairs)
+            if course['activity_type'] == 'Curs':
+                selected = [x.strip() for x in course['target_groups'].split(',') if x.strip()]
+                batches, total = 0, 0
+                if aula_capacity:
+                    for group in selected:
+                        size = group_sizes.get(group, 0)
+                        if total and total + size > aula_capacity:
+                            batches += 1
+                            total = 0
+                        total += size
+                    if total:
+                        batches += 1
+                else:
+                    batches = 1
+                batches = max(1, batches)
+            else:
+                batches = max(1, len({x.strip() for x in course['target_groups'].split(',') if x.strip()}))
+            sessions = cls.decompose_academic_hours(course['academic_hours'])
+            full = sessions.count('FULL') * batches
+            split = sessions.count('SPLIT') * batches
+            minimum = full + ceil(split / 2)
+            if minimum > slots:
+                errors.append(
+                    f"• {course['name']} ({course['professor']}): sunt necesare minimum "
+                    f"{minimum} intervale pentru {full + split} ședințe, dar sunt permise "
+                    f"numai {slots} (zile: {', '.join(d for d in cls.DAYS if d in days)}; "
+                    f"perechi: {', '.join(str(p) for p in cls.PAIRS if p in pairs)})."
+                )
+        return errors
+
+    @classmethod
     def build_variables_and_domains(cls, groups, courses, rooms, timeslots, allow_overcapacity=False):
         variables, var_meta, domains, capacity_errors = [], {}, {}, []
         group_map = {g["name"]: g["student_count"] for g in groups}
         max_aula_cap = max((r["capacity"] for r in rooms if r["room_type"] == "Aulă"), default=0)
 
         for c in sorted(courses, key=lambda x: x["priority"], reverse=True):
+            days = {x.strip() for x in c.get("allowed_days", ",".join(cls.DAYS)).split(",")}
+            pairs_raw = [x.strip() for x in c.get("allowed_pairs", ",".join(map(str, cls.PAIRS))).split(",")]
+            try:
+                pairs = {int(x) for x in pairs_raw if x}
+            except ValueError:
+                pairs = set()
+            if not days or not pairs or not days.issubset(cls.DAYS) or not pairs.issubset(cls.PAIRS):
+                capacity_errors.append(f"Disciplina '{c['name']}' are zile/perechi permise invalide.")
+                continue
+            permitted_slots = [s for s in timeslots if s["day"] in days and s["pair"] in pairs]
+            if not permitted_slots:
+                capacity_errors.append(f"Disciplina '{c['name']}' nu are intervale permise.")
+                continue
             requested = [g.strip() for g in c["target_groups"].split(",") if g.strip()]
             missing = [g for g in requested if g not in group_map]
             if missing:
@@ -79,7 +148,7 @@ class ScheduleEngine:
                     }
                     domains[vid] = [
                         (s["id"], r, par)
-                        for s in timeslots for r in valid_rooms
+                        for s in permitted_slots for r in valid_rooms
                         for par in (["FULL"] if s_mode == "FULL" else ["IMPAR", "PAR"])
                     ]
         return variables, var_meta, domains, capacity_errors

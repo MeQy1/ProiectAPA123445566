@@ -414,10 +414,10 @@ class ManagementMixin:
         name = self.ent_group_name.get().strip()
         try:
             cnt = int(self.spn_group_count.get())
-            if not 5 <= cnt <= 50:
+            if not 1 <= cnt <= 150:
                 raise ValueError
         except ValueError:
-            return messagebox.showwarning("Atenție", "Numărul de studenți trebuie să fie între 5 și 50!")
+            return messagebox.showwarning("Atenție", "Numărul de studenți trebuie să fie între 1 și 150!")
         if not name:
             return messagebox.showwarning("Atenție", "Introduceți numele grupei!")
         try:
